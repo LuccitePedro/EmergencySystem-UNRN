@@ -1,4 +1,4 @@
-package com.example.emergency_system 
+package com.example.emergency_system
 
 import android.os.Build
 import android.os.Bundle
@@ -9,7 +9,6 @@ class MainActivity: FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Esta es la condición que permite mostrar la app sobre la pantalla de bloqueo
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
