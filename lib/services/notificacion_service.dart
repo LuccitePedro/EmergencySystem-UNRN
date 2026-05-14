@@ -1,11 +1,16 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/material.dart';
 
 class NotificacionService {
   static final FlutterLocalNotificationsPlugin _notificacionesPlugin =
       FlutterLocalNotificationsPlugin();
 
-  static Future<void> inicializar() async {
+  // Guardamos una referencia a la llave
+  static late GlobalKey<NavigatorState> _navigatorKey;
+
+  static Future<void> inicializar(GlobalKey<NavigatorState> navigatorKey) async {
+    _navigatorKey = navigatorKey;
     // Pedir permiso en Android 13+
     await Permission.notification.request();
 
@@ -19,6 +24,13 @@ class NotificacionService {
     // Acá usamos 'settings' que es lo que pide la versión de tu paquete
     await _notificacionesPlugin.initialize(
       settings: configuraciones, 
+      // ESTO ES NUEVO: Qué hacer cuando tocan la notificación
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.payload == 'emergencia_payload') {
+          // Navegamos directamente al perfil médico
+          _navigatorKey.currentState?.pushNamed('/perfil_medico');
+        }
+      },
     );
   }
 
