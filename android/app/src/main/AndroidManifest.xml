@@ -5,6 +5,7 @@
 
 <!-- Permiso CRUCIAL para saltar la pantalla de bloqueo (Alarma/Llamada) -->
 <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+<uses-permission android:name="android.permission.USE_BIOMETRIC"/>
 
 <application
     android:label="emergency_system"

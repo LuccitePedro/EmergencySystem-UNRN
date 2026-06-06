@@ -12,6 +12,7 @@ import 'screens/pantalla_obra_social.dart';
 import 'screens/pantalla_contactos.dart';
 import 'screens/pantalla_restricciones.dart';
 import 'screens/pantalla_editar_perfil.dart';
+import 'services/auth_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -158,16 +159,19 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
   }
 
   Future<void> _irAEditar() async {
-    final perfilActualizado = await Navigator.push<PerfilMedico>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PantallaEditarPerfil(perfilActual: _perfil),
-      ),
-    );
-    if (perfilActualizado != null) {
-      setState(() => _perfil = perfilActualizado);
-    }
+  final autenticado = await AuthService.pedirAutenticacion();
+  if (!autenticado) return; // Si no se autenticó, no hace nada
+
+  final perfilActualizado = await Navigator.push<PerfilMedico>(
+    context,
+    MaterialPageRoute(
+      builder: (_) => PantallaEditarPerfil(perfilActual: _perfil),
+    ),
+  );
+  if (perfilActualizado != null) {
+    setState(() => _perfil = perfilActualizado);
   }
+}
 
   @override
   Widget build(BuildContext context) {
