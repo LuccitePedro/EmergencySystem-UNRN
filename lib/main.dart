@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'services/notificacion_service.dart';
+import 'services/storage_service.dart';
 import 'models/perfil_medico.dart';
 import 'screens/pantalla_alergias.dart';
 import 'screens/pantalla_enfermedades.dart';
@@ -10,6 +11,7 @@ import 'screens/pantalla_vacunas.dart';
 import 'screens/pantalla_obra_social.dart';
 import 'screens/pantalla_contactos.dart';
 import 'screens/pantalla_restricciones.dart';
+import 'screens/pantalla_editar_perfil.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -30,33 +32,84 @@ class EmergenciaApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'App de Emergencia',
       theme: ThemeData(primarySwatch: Colors.red),
-      initialRoute: '/perfil_medico',
-      routes: {
-        '/': (context) => const PantallaInicio(),
-        '/perfil_medico': (context) => const PantallaPerfilMedico(),
-      },
+      home: const PantallaCarga(),
     );
   }
 }
 
-class PantallaInicio extends StatelessWidget {
-  const PantallaInicio({super.key});
+// ─────────────────────────────────────────────
+//  PANTALLA DE CARGA
+// ─────────────────────────────────────────────
+class PantallaCarga extends StatefulWidget {
+  const PantallaCarga({super.key});
+
+  @override
+  State<PantallaCarga> createState() => _PantallaCargaState();
+}
+
+class _PantallaCargaState extends State<PantallaCarga> {
+  @override
+  void initState() {
+    super.initState();
+    _decidirRuta();
+  }
+
+  Future<void> _decidirRuta() async {
+    final esPrimero = await StorageService.esPrimerUso();
+    final perfil = await StorageService.cargarPerfil();
+
+    if (!mounted) return;
+
+    if (esPrimero) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PantallaEditarPerfil(
+            perfilActual: PerfilMedico.vacio,
+            esPrimerUso: true,
+          ),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => PantallaPerfilMedico(perfil: perfil)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Inicio Normal')));
+    return const Scaffold(
+      backgroundColor: Color(0xFFF9183E),
+      body: Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
   }
 }
 
 // ─────────────────────────────────────────────
-//  PANTALLA PRINCIPAL DE EMERGENCIA
+//  PANTALLA PRINCIPAL
 // ─────────────────────────────────────────────
-class PantallaPerfilMedico extends StatelessWidget {
-  const PantallaPerfilMedico({super.key});
+class PantallaPerfilMedico extends StatefulWidget {
+  final PerfilMedico perfil;
+  const PantallaPerfilMedico({super.key, required this.perfil});
 
-  // Datos del perfil — luego vendrán de shared_preferences
-  static const perfil = PerfilMedico.ejemplo;
+  @override
+  State<PantallaPerfilMedico> createState() => _PantallaPerfilMedicoState();
+}
 
-  Future<void> _llamar911(BuildContext context) async {
+class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
+  late PerfilMedico _perfil;
+
+  @override
+  void initState() {
+    super.initState();
+    _perfil = widget.perfil;
+  }
+
+  Future<void> _llamar911() async {
     if (kDebugMode) {
       showDialog(
         context: context,
@@ -72,8 +125,8 @@ class PantallaPerfilMedico extends StatelessWidget {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  Future<void> _llamarContactoEmergencia(BuildContext context) async {
-    if (perfil.contactos.isEmpty) {
+  Future<void> _llamarContactoEmergencia() async {
+    if (_perfil.contactos.isEmpty) {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -85,7 +138,7 @@ class PantallaPerfilMedico extends StatelessWidget {
       return;
     }
     if (kDebugMode) {
-      final c = perfil.contactos.first;
+      final c = _perfil.contactos.first;
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -96,12 +149,24 @@ class PantallaPerfilMedico extends StatelessWidget {
       );
       return;
     }
-    final uri = Uri(scheme: 'tel', path: perfil.contactos.first.telefono);
+    final uri = Uri(scheme: 'tel', path: _perfil.contactos.first.telefono);
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  void _navegar(BuildContext context, Widget pantalla) {
+  void _navegar(Widget pantalla) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => pantalla));
+  }
+
+  Future<void> _irAEditar() async {
+    final perfilActualizado = await Navigator.push<PerfilMedico>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PantallaEditarPerfil(perfilActual: _perfil),
+      ),
+    );
+    if (perfilActualizado != null) {
+      setState(() => _perfil = perfilActualizado);
+    }
   }
 
   @override
@@ -112,44 +177,38 @@ class PantallaPerfilMedico extends StatelessWidget {
       _Categoria(
         texto: 'Enfermedades',
         icono: Icons.local_hospital_outlined,
-        pantalla: PantallaEnfermedades(perfil: perfil),
-        tieneData: perfil.enfermedades.isNotEmpty,
+        pantalla: PantallaEnfermedades(perfil: _perfil),
+        tieneData: _perfil.enfermedades.isNotEmpty,
       ),
       _Categoria(
         texto: 'Alergias',
         icono: Icons.warning_amber_outlined,
-        pantalla: PantallaAlergias(perfil: perfil),
-        tieneData: perfil.alergias.isNotEmpty,
+        pantalla: PantallaAlergias(perfil: _perfil),
+        tieneData: _perfil.alergias.isNotEmpty,
       ),
       _Categoria(
-        texto: 'Contacto\nRespaldo',
+        texto: 'Número de\nRespaldo',
         icono: Icons.contact_phone_outlined,
-        pantalla: PantallaContactos(perfil: perfil),
-        tieneData: perfil.contactos.isNotEmpty,
+        pantalla: PantallaContactos(perfil: _perfil),
+        tieneData: _perfil.contactos.isNotEmpty,
       ),
       _Categoria(
         texto: 'Vacunas',
         icono: Icons.vaccines_outlined,
-        pantalla: PantallaVacunas(perfil: perfil),
-        tieneData: perfil.vacunas.isNotEmpty,
+        pantalla: PantallaVacunas(perfil: _perfil),
+        tieneData: _perfil.vacunas.isNotEmpty,
       ),
       _Categoria(
         texto: 'Obra Social',
         icono: Icons.card_membership_outlined,
-        pantalla: PantallaObraSocial(perfil: perfil),
-        tieneData: perfil.obraSocial.isNotEmpty,
+        pantalla: PantallaObraSocial(perfil: _perfil),
+        tieneData: _perfil.obraSocial.isNotEmpty,
       ),
       _Categoria(
         texto: 'Medicación',
         icono: Icons.medication_outlined,
-        pantalla: PantallaMedicacion(perfil: perfil),
-        tieneData: perfil.medicacion.isNotEmpty,
-      ),
-      _Categoria(
-        texto: 'Restricciones\nAlimentarias',
-        icono: Icons.no_meals_outlined,
-        pantalla: PantallaRestriccionesAlimentarias(perfil: perfil),
-        tieneData: perfil.restriccionesAlimentarias.isNotEmpty,
+        pantalla: PantallaMedicacion(perfil: _perfil),
+        tieneData: _perfil.medicacion.isNotEmpty,
       ),
     ];
 
@@ -157,17 +216,15 @@ class PantallaPerfilMedico extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF9183E),
         title: Text(
-          perfil.nombre,
-          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          _perfil.nombre.isEmpty ? 'Mi perfil' : _perfil.nombre,
+          style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             tooltip: 'Editar perfil',
-            onPressed: () {
-              // TODO: navegar a pantalla de edición general
-            },
+            onPressed: _irAEditar,
           ),
         ],
       ),
@@ -176,7 +233,6 @@ class PantallaPerfilMedico extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Tarjeta de datos vitales ──
             Card(
               color: colorTarjetas,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -188,29 +244,27 @@ class PantallaPerfilMedico extends StatelessWidget {
                     _FilaVital(
                       icono: Icons.bloodtype,
                       label: 'Grupo / Factor',
-                      valor: perfil.grupoSanguineo,
+                      valor: _perfil.grupoSanguineo.isEmpty ? 'No registrado' : _perfil.grupoSanguineo,
                     ),
                     const Divider(color: Colors.white24, height: 20),
                     _FilaVital(
                       icono: Icons.warning_amber,
                       label: 'Alergias',
-                      valor: perfil.alergias.isEmpty ? 'Sin alergias conocidas' : perfil.alergias.join(', '),
+                      valor: _perfil.alergias.isEmpty ? 'Sin alergias conocidas' : _perfil.alergias.join(', '),
                     ),
                     const Divider(color: Colors.white24, height: 20),
                     _FilaVital(
                       icono: Icons.local_hospital,
                       label: 'Enfermedades',
-                      valor: perfil.enfermedades.isEmpty ? 'Ninguna' : perfil.enfermedades.join(', '),
+                      valor: _perfil.enfermedades.isEmpty ? 'Ninguna' : _perfil.enfermedades.join(', '),
                     ),
                     const Divider(color: Colors.white24, height: 20),
                     _FilaVital(
                       icono: Icons.medication,
                       label: 'Medicación',
-                      valor: perfil.medicacion.isEmpty ? 'Sin medicación' : perfil.medicacion.join(', '),
+                      valor: _perfil.medicacion.isEmpty ? 'Sin medicación' : _perfil.medicacion.join(', '),
                     ),
                     const SizedBox(height: 20),
-
-                    // ── Botones de acción rápida ──
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -219,18 +273,18 @@ class PantallaPerfilMedico extends StatelessWidget {
                           titulo: '911',
                           subtitulo: 'Ambulancia',
                           colorFondo: Colors.green.shade700,
-                          onTap: () => _llamar911(context),
+                          onTap: _llamar911,
                         ),
                         _BotonAccionRapida(
                           icono: Icons.person,
-                          titulo: perfil.contactos.isEmpty
+                          titulo: _perfil.contactos.isEmpty
                               ? 'Sin contacto'
-                              : perfil.contactos.first.nombre.split(' ').first,
-                          subtitulo: perfil.contactos.isEmpty
+                              : _perfil.contactos.first.nombre.split(' ').first,
+                          subtitulo: _perfil.contactos.isEmpty
                               ? 'Agregá uno'
-                              : perfil.contactos.first.relacion,
+                              : _perfil.contactos.first.relacion,
                           colorFondo: Colors.blue.shade700,
-                          onTap: () => _llamarContactoEmergencia(context),
+                          onTap: _llamarContactoEmergencia,
                         ),
                       ],
                     ),
@@ -238,10 +292,7 @@ class PantallaPerfilMedico extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // ── Grilla de categorías ──
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -259,7 +310,7 @@ class PantallaPerfilMedico extends StatelessWidget {
                   icono: cat.icono,
                   colorFondo: colorTarjetas,
                   tieneData: cat.tieneData,
-                  onTap: () => _navegar(context, cat.pantalla),
+                  onTap: () => _navegar(cat.pantalla),
                 );
               },
             ),
@@ -329,14 +380,8 @@ class _BotonAccionRapida extends StatelessWidget {
             child: Icon(icono, color: Colors.white, size: 28),
           ),
           const SizedBox(height: 6),
-          Text(
-            titulo,
-            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            subtitulo,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
+          Text(titulo, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+          Text(subtitulo, style: const TextStyle(color: Colors.white70, fontSize: 12)),
         ],
       ),
     );
@@ -389,9 +434,6 @@ class _BotonCategoria extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-//  DATO AUXILIAR
-// ─────────────────────────────────────────────
 class _Categoria {
   final String texto;
   final IconData icono;

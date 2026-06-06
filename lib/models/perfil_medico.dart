@@ -1,6 +1,4 @@
-/// Modelo central de datos del perfil médico.
-/// Por ahora tiene datos hardcodeados; cuando agreguemos
-/// shared_preferences, solo cambiamos este archivo.
+
 class PerfilMedico {
   final String nombre;
   final String grupoSanguineo;
@@ -26,7 +24,19 @@ class PerfilMedico {
     required this.contactos,
   });
 
-  /// Datos de ejemplo. Reemplazar con carga desde storage.
+  static const PerfilMedico vacio = PerfilMedico(
+    nombre: '',
+    grupoSanguineo: '',
+    alergias: [],
+    enfermedades: [],
+    medicacion: [],
+    vacunas: [],
+    obraSocial: '',
+    numeroSocio: '',
+    restriccionesAlimentarias: [],
+    contactos: [],
+  );
+
   static const PerfilMedico ejemplo = PerfilMedico(
     nombre: 'Persona Equis',
     grupoSanguineo: 'A+',
@@ -42,6 +52,66 @@ class PerfilMedico {
       ContactoEmergencia(nombre: 'Carlos Equis', relacion: 'Padre', telefono: '2944654321'),
     ],
   );
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nombre': nombre,
+      'grupoSanguineo': grupoSanguineo,
+      'alergias': alergias,
+      'enfermedades': enfermedades,
+      'medicacion': medicacion,
+      'vacunas': vacunas,
+      'obraSocial': obraSocial,
+      'numeroSocio': numeroSocio,
+      'restriccionesAlimentarias': restriccionesAlimentarias,
+      'contactos': contactos.map((c) => c.toJson()).toList(),
+    };
+  }
+
+  factory PerfilMedico.fromJson(Map<String, dynamic> json) {
+    return PerfilMedico(
+      nombre: json['nombre'] ?? '',
+      grupoSanguineo: json['grupoSanguineo'] ?? '',
+      alergias: List<String>.from(json['alergias'] ?? []),
+      enfermedades: List<String>.from(json['enfermedades'] ?? []),
+      medicacion: List<String>.from(json['medicacion'] ?? []),
+      vacunas: List<String>.from(json['vacunas'] ?? []),
+      obraSocial: json['obraSocial'] ?? '',
+      numeroSocio: json['numeroSocio'] ?? '',
+      restriccionesAlimentarias: List<String>.from(json['restriccionesAlimentarias'] ?? []),
+      contactos: (json['contactos'] as List<dynamic>? ?? [])
+          .map((c) => ContactoEmergencia.fromJson(c as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  PerfilMedico copyWith({
+    String? nombre,
+    String? grupoSanguineo,
+    List<String>? alergias,
+    List<String>? enfermedades,
+    List<String>? medicacion,
+    List<String>? vacunas,
+    String? obraSocial,
+    String? numeroSocio,
+    List<String>? restriccionesAlimentarias,
+    List<ContactoEmergencia>? contactos,
+  }) {
+    return PerfilMedico(
+      nombre: nombre ?? this.nombre,
+      grupoSanguineo: grupoSanguineo ?? this.grupoSanguineo,
+      alergias: alergias ?? this.alergias,
+      enfermedades: enfermedades ?? this.enfermedades,
+      medicacion: medicacion ?? this.medicacion,
+      vacunas: vacunas ?? this.vacunas,
+      obraSocial: obraSocial ?? this.obraSocial,
+      numeroSocio: numeroSocio ?? this.numeroSocio,
+      restriccionesAlimentarias: restriccionesAlimentarias ?? this.restriccionesAlimentarias,
+      contactos: contactos ?? this.contactos,
+    );
+  }
+
+  bool get estaVacio => nombre.isEmpty;
 }
 
 class ContactoEmergencia {
@@ -54,4 +124,18 @@ class ContactoEmergencia {
     required this.relacion,
     required this.telefono,
   });
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'relacion': relacion,
+        'telefono': telefono,
+      };
+
+  factory ContactoEmergencia.fromJson(Map<String, dynamic> json) {
+    return ContactoEmergencia(
+      nombre: json['nombre'] ?? '',
+      relacion: json['relacion'] ?? '',
+      telefono: json['telefono'] ?? '',
+    );
+  }
 }
