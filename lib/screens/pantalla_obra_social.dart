@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/perfil_medico.dart';
 import '../services/auth_service.dart';
+import 'pantalla_editar_perfil.dart';
 
 class PantallaObraSocial extends StatelessWidget {
   final PerfilMedico perfil;
@@ -8,24 +9,27 @@ class PantallaObraSocial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const color = Color(0xFFA03333);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFFF9183E),
-        title: const Text(
-          'Obra Social',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Obra Social',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
-            tooltip: 'Editar',
             onPressed: () async {
               final autenticado = await AuthService.pedirAutenticacion();
-              if (!autenticado) return;
-              // TODO: navegar a edición
+              if (!autenticado || !context.mounted) return;
+              final perfilActualizado = await Navigator.push<PerfilMedico>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PantallaEditarPerfil(perfilActual: perfil),
+                ),
+              );
+              if (perfilActualizado != null && context.mounted) {
+                Navigator.pop(context, perfilActualizado);
+              }
             },
           ),
         ],
@@ -34,18 +38,14 @@ class PantallaObraSocial extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _FilaDato(
+            _TarjetaDato(
               label: 'Obra Social',
-              valor: perfil.obraSocial.isEmpty
-                  ? 'No registrada'
-                  : perfil.obraSocial,
+              valor: perfil.obraSocial.isEmpty ? 'No registrada' : perfil.obraSocial,
             ),
             const SizedBox(height: 12),
-            _FilaDato(
+            _TarjetaDato(
               label: 'Número de socio',
-              valor: perfil.numeroSocio.isEmpty
-                  ? 'No registrado'
-                  : perfil.numeroSocio,
+              valor: perfil.numeroSocio.isEmpty ? 'No registrado' : perfil.numeroSocio,
             ),
           ],
         ),
@@ -54,10 +54,10 @@ class PantallaObraSocial extends StatelessWidget {
   }
 }
 
-class _FilaDato extends StatelessWidget {
+class _TarjetaDato extends StatelessWidget {
   final String label;
   final String valor;
-  const _FilaDato({required this.label, required this.valor});
+  const _TarjetaDato({required this.label, required this.valor});
 
   @override
   Widget build(BuildContext context) {
@@ -66,28 +66,20 @@ class _FilaDato extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    valor,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.white60,
+                    fontStyle: FontStyle.italic,
+                    fontSize: 13)),
+            const SizedBox(height: 6),
+            Text(valor,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
       ),

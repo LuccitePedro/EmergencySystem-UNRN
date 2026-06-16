@@ -7,25 +7,33 @@ class AuthService {
   /// Pide autenticación biométrica o PIN al usuario.
   /// Devuelve true si se autenticó correctamente, false si canceló o falló.
   static Future<bool> pedirAutenticacion() async {
-    try {
-      // Verificamos si el dispositivo soporta biometría
-      final disponible = await _auth.canCheckBiometrics;
-      final soportado = await _auth.isDeviceSupported();
+  try {
+    final disponible = await _auth.canCheckBiometrics;
+    final soportado = await _auth.isDeviceSupported();
 
-      if (!disponible && !soportado) {
-        // El dispositivo no tiene ningún método de autenticación configurado
-        return false;
-      }
+    // Agregamos estos prints para ver qué devuelve
+    print('canCheckBiometrics: $disponible');
+    print('isDeviceSupported: $soportado');
 
-      return await _auth.authenticate(
-        localizedReason: 'Autenticáte para editar tu perfil médico',
-        options: const AuthenticationOptions(
-          biometricOnly: false, // Permite PIN/patrón además de huella
-          stickyAuth: true,     // Si el usuario sale de la app, retoma la autenticación
-        ),
-      );
-    } on PlatformException {
+    if (!disponible && !soportado) {
+      print('Dispositivo no soportado, retornando false');
       return false;
     }
+
+    final resultado = await _auth.authenticate(
+      localizedReason: 'Autenticáte para editar tu perfil médico',
+      options: const AuthenticationOptions(
+        biometricOnly: false,
+        stickyAuth: true,
+      ),
+    );
+
+    print('Resultado autenticación: $resultado');
+    return resultado;
+
+  } on PlatformException catch (e) {
+    print('PlatformException: ${e.code} - ${e.message}');
+    return false;
   }
+}
 }

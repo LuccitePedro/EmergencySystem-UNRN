@@ -1,11 +1,165 @@
+import 'dart:convert';
+
+// ─────────────────────────────────────────────
+//  MODELOS DE DETALLE
+// ─────────────────────────────────────────────
+
+class Vacuna {
+  final String nombre;
+  final String dosis;
+  final String marca;
+  final String fecha;
+  final String localidad;
+
+  const Vacuna({
+    required this.nombre,
+    required this.dosis,
+    required this.marca,
+    required this.fecha,
+    required this.localidad,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'dosis': dosis,
+        'marca': marca,
+        'fecha': fecha,
+        'localidad': localidad,
+      };
+
+  factory Vacuna.fromJson(Map<String, dynamic> json) => Vacuna(
+        nombre: json['nombre'] ?? '',
+        dosis: json['dosis'] ?? '',
+        marca: json['marca'] ?? '',
+        fecha: json['fecha'] ?? '',
+        localidad: json['localidad'] ?? '',
+      );
+}
+
+class Medicamento {
+  final String nombre;
+  final String dosis;
+  final String marca;
+  final String frecuencia;
+  final String via;         // oral, inyectable, inhalada, etc.
+  final String indicacion;  // para qué es
+
+  const Medicamento({
+    required this.nombre,
+    required this.dosis,
+    required this.marca,
+    required this.frecuencia,
+    required this.via,
+    required this.indicacion,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'dosis': dosis,
+        'marca': marca,
+        'frecuencia': frecuencia,
+        'via': via,
+        'indicacion': indicacion,
+      };
+
+  factory Medicamento.fromJson(Map<String, dynamic> json) => Medicamento(
+        nombre: json['nombre'] ?? '',
+        dosis: json['dosis'] ?? '',
+        marca: json['marca'] ?? '',
+        frecuencia: json['frecuencia'] ?? '',
+        via: json['via'] ?? '',
+        indicacion: json['indicacion'] ?? '',
+      );
+}
+
+class Enfermedad {
+  final String nombre;
+  final String tratamiento;
+  final String fechaDiagnostico;
+
+  const Enfermedad({
+    required this.nombre,
+    required this.tratamiento,
+    required this.fechaDiagnostico,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'tratamiento': tratamiento,
+        'fechaDiagnostico': fechaDiagnostico,
+      };
+
+  factory Enfermedad.fromJson(Map<String, dynamic> json) => Enfermedad(
+        nombre: json['nombre'] ?? '',
+        tratamiento: json['tratamiento'] ?? '',
+        fechaDiagnostico: json['fechaDiagnostico'] ?? '',
+      );
+}
+
+class Alergia {
+  final String nombre;
+  final String reaccion;
+  final String severidad;     // Leve, Moderada, Grave
+  final String queHacer;      // ej: aplicar EpiPen
+
+  const Alergia({
+    required this.nombre,
+    required this.reaccion,
+    required this.severidad,
+    required this.queHacer,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'reaccion': reaccion,
+        'severidad': severidad,
+        'queHacer': queHacer,
+      };
+
+  factory Alergia.fromJson(Map<String, dynamic> json) => Alergia(
+        nombre: json['nombre'] ?? '',
+        reaccion: json['reaccion'] ?? '',
+        severidad: json['severidad'] ?? '',
+        queHacer: json['queHacer'] ?? '',
+      );
+}
+
+class ContactoEmergencia {
+  final String nombre;
+  final String relacion;
+  final String telefono;
+
+  const ContactoEmergencia({
+    required this.nombre,
+    required this.relacion,
+    required this.telefono,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'relacion': relacion,
+        'telefono': telefono,
+      };
+
+  factory ContactoEmergencia.fromJson(Map<String, dynamic> json) =>
+      ContactoEmergencia(
+        nombre: json['nombre'] ?? '',
+        relacion: json['relacion'] ?? '',
+        telefono: json['telefono'] ?? '',
+      );
+}
+
+// ─────────────────────────────────────────────
+//  PERFIL MÉDICO PRINCIPAL
+// ─────────────────────────────────────────────
 
 class PerfilMedico {
   final String nombre;
   final String grupoSanguineo;
-  final List<String> alergias;
-  final List<String> enfermedades;
-  final List<String> medicacion;
-  final List<String> vacunas;
+  final List<Alergia> alergias;
+  final List<Enfermedad> enfermedades;
+  final List<Medicamento> medicacion;
+  final List<Vacuna> vacunas;
   final String obraSocial;
   final String numeroSocio;
   final List<String> restriccionesAlimentarias;
@@ -37,61 +191,52 @@ class PerfilMedico {
     contactos: [],
   );
 
-  static const PerfilMedico ejemplo = PerfilMedico(
-    nombre: 'Persona Equis',
-    grupoSanguineo: 'A+',
-    alergias: ['Penicilina', 'Ibuprofeno'],
-    enfermedades: ['Diabetes tipo 2', 'Hipertensión'],
-    medicacion: ['Metformina 500mg (mañana)', 'Enalapril 10mg (noche)'],
-    vacunas: ['COVID-19 (2022)', 'Gripe (2024)', 'Tétanos (2021)'],
-    obraSocial: 'OSDE 310',
-    numeroSocio: '1234567-8',
-    restriccionesAlimentarias: ['Sin gluten', 'Sin lactosa'],
-    contactos: [
-      ContactoEmergencia(nombre: 'María García', relacion: 'Madre', telefono: '2944123456'),
-      ContactoEmergencia(nombre: 'Carlos Equis', relacion: 'Padre', telefono: '2944654321'),
-    ],
-  );
+  bool get estaVacio => nombre.isEmpty;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'nombre': nombre,
-      'grupoSanguineo': grupoSanguineo,
-      'alergias': alergias,
-      'enfermedades': enfermedades,
-      'medicacion': medicacion,
-      'vacunas': vacunas,
-      'obraSocial': obraSocial,
-      'numeroSocio': numeroSocio,
-      'restriccionesAlimentarias': restriccionesAlimentarias,
-      'contactos': contactos.map((c) => c.toJson()).toList(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'nombre': nombre,
+        'grupoSanguineo': grupoSanguineo,
+        'alergias': alergias.map((a) => a.toJson()).toList(),
+        'enfermedades': enfermedades.map((e) => e.toJson()).toList(),
+        'medicacion': medicacion.map((m) => m.toJson()).toList(),
+        'vacunas': vacunas.map((v) => v.toJson()).toList(),
+        'obraSocial': obraSocial,
+        'numeroSocio': numeroSocio,
+        'restriccionesAlimentarias': restriccionesAlimentarias,
+        'contactos': contactos.map((c) => c.toJson()).toList(),
+      };
 
-  factory PerfilMedico.fromJson(Map<String, dynamic> json) {
-    return PerfilMedico(
-      nombre: json['nombre'] ?? '',
-      grupoSanguineo: json['grupoSanguineo'] ?? '',
-      alergias: List<String>.from(json['alergias'] ?? []),
-      enfermedades: List<String>.from(json['enfermedades'] ?? []),
-      medicacion: List<String>.from(json['medicacion'] ?? []),
-      vacunas: List<String>.from(json['vacunas'] ?? []),
-      obraSocial: json['obraSocial'] ?? '',
-      numeroSocio: json['numeroSocio'] ?? '',
-      restriccionesAlimentarias: List<String>.from(json['restriccionesAlimentarias'] ?? []),
-      contactos: (json['contactos'] as List<dynamic>? ?? [])
-          .map((c) => ContactoEmergencia.fromJson(c as Map<String, dynamic>))
-          .toList(),
-    );
-  }
+  factory PerfilMedico.fromJson(Map<String, dynamic> json) => PerfilMedico(
+        nombre: json['nombre'] ?? '',
+        grupoSanguineo: json['grupoSanguineo'] ?? '',
+        alergias: (json['alergias'] as List<dynamic>? ?? [])
+            .map((a) => Alergia.fromJson(a as Map<String, dynamic>))
+            .toList(),
+        enfermedades: (json['enfermedades'] as List<dynamic>? ?? [])
+            .map((e) => Enfermedad.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        medicacion: (json['medicacion'] as List<dynamic>? ?? [])
+            .map((m) => Medicamento.fromJson(m as Map<String, dynamic>))
+            .toList(),
+        vacunas: (json['vacunas'] as List<dynamic>? ?? [])
+            .map((v) => Vacuna.fromJson(v as Map<String, dynamic>))
+            .toList(),
+        obraSocial: json['obraSocial'] ?? '',
+        numeroSocio: json['numeroSocio'] ?? '',
+        restriccionesAlimentarias:
+            List<String>.from(json['restriccionesAlimentarias'] ?? []),
+        contactos: (json['contactos'] as List<dynamic>? ?? [])
+            .map((c) => ContactoEmergencia.fromJson(c as Map<String, dynamic>))
+            .toList(),
+      );
 
   PerfilMedico copyWith({
     String? nombre,
     String? grupoSanguineo,
-    List<String>? alergias,
-    List<String>? enfermedades,
-    List<String>? medicacion,
-    List<String>? vacunas,
+    List<Alergia>? alergias,
+    List<Enfermedad>? enfermedades,
+    List<Medicamento>? medicacion,
+    List<Vacuna>? vacunas,
     String? obraSocial,
     String? numeroSocio,
     List<String>? restriccionesAlimentarias,
@@ -106,36 +251,9 @@ class PerfilMedico {
       vacunas: vacunas ?? this.vacunas,
       obraSocial: obraSocial ?? this.obraSocial,
       numeroSocio: numeroSocio ?? this.numeroSocio,
-      restriccionesAlimentarias: restriccionesAlimentarias ?? this.restriccionesAlimentarias,
+      restriccionesAlimentarias:
+          restriccionesAlimentarias ?? this.restriccionesAlimentarias,
       contactos: contactos ?? this.contactos,
-    );
-  }
-
-  bool get estaVacio => nombre.isEmpty;
-}
-
-class ContactoEmergencia {
-  final String nombre;
-  final String relacion;
-  final String telefono;
-
-  const ContactoEmergencia({
-    required this.nombre,
-    required this.relacion,
-    required this.telefono,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'nombre': nombre,
-        'relacion': relacion,
-        'telefono': telefono,
-      };
-
-  factory ContactoEmergencia.fromJson(Map<String, dynamic> json) {
-    return ContactoEmergencia(
-      nombre: json['nombre'] ?? '',
-      relacion: json['relacion'] ?? '',
-      telefono: json['telefono'] ?? '',
     );
   }
 }

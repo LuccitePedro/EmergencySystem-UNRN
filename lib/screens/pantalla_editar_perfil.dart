@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/perfil_medico.dart';
 import '../services/storage_service.dart';
-import '../services/auth_service.dart';
 
 class PantallaEditarPerfil extends StatefulWidget {
   final PerfilMedico perfilActual;
@@ -20,23 +19,25 @@ class PantallaEditarPerfil extends StatefulWidget {
 class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controladores para campos de texto simples
   late TextEditingController _nombreCtrl;
   late TextEditingController _obraSocialCtrl;
   late TextEditingController _numeroSocioCtrl;
 
-  // Listas editables
-  late List<String> _alergias;
-  late List<String> _enfermedades;
-  late List<String> _medicacion;
-  late List<String> _vacunas;
+  late List<Alergia> _alergias;
+  late List<Enfermedad> _enfermedades;
+  late List<Medicamento> _medicacion;
+  late List<Vacuna> _vacunas;
   late List<String> _restricciones;
   late List<ContactoEmergencia> _contactos;
 
-  // Grupo sanguíneo con selector
   String? _grupoSanguineo;
 
-  static const _gruposSanguineos = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  static const _gruposSanguineos = [
+    'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'
+  ];
+
+  static const _severidades = ['Leve', 'Moderada', 'Grave'];
+  static const _vias = ['Oral', 'Inyectable', 'Inhalada', 'Sublingual', 'Tópica'];
 
   @override
   void initState() {
@@ -80,38 +81,227 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
 
     await StorageService.guardarPerfil(perfilNuevo);
     if (widget.esPrimerUso) await StorageService.marcarPrimerUsoCompletado();
-
     if (mounted) Navigator.pop(context, perfilNuevo);
   }
 
-  // Muestra un diálogo para agregar un ítem de texto a una lista
-  Future<void> _agregarItem(List<String> lista, String titulo) async {
-    final ctrl = TextEditingController();
-    final resultado = await showDialog<String>(
+  // ── Diálogo para agregar Alergia ──
+  Future<void> _agregarAlergia() async {
+    final nombreCtrl = TextEditingController();
+    final reaccionCtrl = TextEditingController();
+    final queHacerCtrl = TextEditingController();
+    String? severidad;
+
+    final resultado = await showDialog<Alergia>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Agregar $titulo'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(hintText: titulo),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: const Text('Agregar alergia'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _Campo(ctrl: nombreCtrl, label: 'Nombre (ej: Penicilina)'),
+                _Campo(ctrl: reaccionCtrl, label: 'Reacción (ej: urticaria)'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: severidad,
+                  hint: const Text('Severidad'),
+                  items: _severidades
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) => setStateDialog(() => severidad = v),
+                ),
+                _Campo(ctrl: queHacerCtrl, label: 'Qué hacer (ej: aplicar EpiPen)'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: () {
+                if (nombreCtrl.text.trim().isEmpty) return;
+                Navigator.pop(ctx, Alergia(
+                  nombre: nombreCtrl.text.trim(),
+                  reaccion: reaccionCtrl.text.trim(),
+                  severidad: severidad ?? 'Leve',
+                  queHacer: queHacerCtrl.text.trim(),
+                ));
+              },
+              child: const Text('Agregar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (resultado != null) setState(() => _alergias.add(resultado));
+  }
+
+  // ── Diálogo para agregar Enfermedad ──
+  Future<void> _agregarEnfermedad() async {
+    final nombreCtrl = TextEditingController();
+    final tratamientoCtrl = TextEditingController();
+    final fechaCtrl = TextEditingController();
+
+    final resultado = await showDialog<Enfermedad>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Agregar enfermedad'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _Campo(ctrl: nombreCtrl, label: 'Nombre (ej: Diabetes tipo 2)'),
+              _Campo(ctrl: tratamientoCtrl, label: 'Tratamiento actual'),
+              _Campo(ctrl: fechaCtrl, label: 'Fecha de diagnóstico (ej: 2019)'),
+            ],
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           TextButton(
-            onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+            onPressed: () {
+              if (nombreCtrl.text.trim().isEmpty) return;
+              Navigator.pop(ctx, Enfermedad(
+                nombre: nombreCtrl.text.trim(),
+                tratamiento: tratamientoCtrl.text.trim(),
+                fechaDiagnostico: fechaCtrl.text.trim(),
+              ));
+            },
             child: const Text('Agregar'),
           ),
         ],
       ),
     );
-    if (resultado != null && resultado.isNotEmpty) {
-      setState(() => lista.add(resultado));
-    }
+    if (resultado != null) setState(() => _enfermedades.add(resultado));
   }
 
-  // Muestra un diálogo para agregar un contacto de emergencia
+  // ── Diálogo para agregar Medicamento ──
+  Future<void> _agregarMedicamento() async {
+    final nombreCtrl = TextEditingController();
+    final dosisCtrl = TextEditingController();
+    final marcaCtrl = TextEditingController();
+    final frecuenciaCtrl = TextEditingController();
+    final indicacionCtrl = TextEditingController();
+    String? via;
+
+    final resultado = await showDialog<Medicamento>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: const Text('Agregar medicamento'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _Campo(ctrl: nombreCtrl, label: 'Nombre (ej: Metformina)'),
+                _Campo(ctrl: dosisCtrl, label: 'Dosis (ej: 500mg)'),
+                _Campo(ctrl: marcaCtrl, label: 'Marca (opcional)'),
+                _Campo(ctrl: frecuenciaCtrl, label: 'Frecuencia (ej: mañana y noche)'),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: via,
+                  hint: const Text('Vía de administración'),
+                  items: _vias
+                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                      .toList(),
+                  onChanged: (v) => setStateDialog(() => via = v),
+                ),
+                _Campo(ctrl: indicacionCtrl, label: 'Para qué es (ej: para la presión)'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: () {
+                if (nombreCtrl.text.trim().isEmpty) return;
+                Navigator.pop(ctx, Medicamento(
+                  nombre: nombreCtrl.text.trim(),
+                  dosis: dosisCtrl.text.trim(),
+                  marca: marcaCtrl.text.trim(),
+                  frecuencia: frecuenciaCtrl.text.trim(),
+                  via: via ?? '',
+                  indicacion: indicacionCtrl.text.trim(),
+                ));
+              },
+              child: const Text('Agregar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (resultado != null) setState(() => _medicacion.add(resultado));
+  }
+
+  // ── Diálogo para agregar Vacuna ──
+  Future<void> _agregarVacuna() async {
+    final nombreCtrl = TextEditingController();
+    final dosisCtrl = TextEditingController();
+    final marcaCtrl = TextEditingController();
+    final fechaCtrl = TextEditingController();
+    final localidadCtrl = TextEditingController();
+
+    final resultado = await showDialog<Vacuna>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Agregar vacuna'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _Campo(ctrl: nombreCtrl, label: 'Nombre (ej: COVID-19)'),
+              _Campo(ctrl: dosisCtrl, label: 'Dosis (ej: Primera, Única)'),
+              _Campo(ctrl: marcaCtrl, label: 'Marca (ej: Pfizer BioNTech)'),
+              _Campo(ctrl: fechaCtrl, label: 'Fecha (ej: 20/01/2021)'),
+              _Campo(ctrl: localidadCtrl, label: 'Localidad (ej: Hospital Bariloche)'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () {
+              if (nombreCtrl.text.trim().isEmpty) return;
+              Navigator.pop(ctx, Vacuna(
+                nombre: nombreCtrl.text.trim(),
+                dosis: dosisCtrl.text.trim(),
+                marca: marcaCtrl.text.trim(),
+                fecha: fechaCtrl.text.trim(),
+                localidad: localidadCtrl.text.trim(),
+              ));
+            },
+            child: const Text('Agregar'),
+          ),
+        ],
+      ),
+    );
+    if (resultado != null) setState(() => _vacunas.add(resultado));
+  }
+
+  // ── Diálogo para agregar restricción alimentaria ──
+  Future<void> _agregarRestriccion() async {
+    final ctrl = TextEditingController();
+    final resultado = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Agregar restricción'),
+        content: _Campo(ctrl: ctrl, label: 'Ej: Sin gluten'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () {
+              if (ctrl.text.trim().isEmpty) return;
+              Navigator.pop(ctx, ctrl.text.trim());
+            },
+            child: const Text('Agregar'),
+          ),
+        ],
+      ),
+    );
+    if (resultado != null) setState(() => _restricciones.add(resultado));
+  }
+
+  // ── Diálogo para agregar contacto ──
   Future<void> _agregarContacto() async {
     final nombreCtrl = TextEditingController();
     final relacionCtrl = TextEditingController();
@@ -119,42 +309,26 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
 
     final resultado = await showDialog<ContactoEmergencia>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Agregar contacto'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: nombreCtrl,
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Nombre y apellido'),
-            ),
-            TextField(
-              controller: relacionCtrl,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Relación (ej: Madre, Amigo)'),
-            ),
-            TextField(
-              controller: telCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Teléfono'),
-            ),
+            _Campo(ctrl: nombreCtrl, label: 'Nombre y apellido'),
+            _Campo(ctrl: relacionCtrl, label: 'Relación (ej: Madre)'),
+            _Campo(ctrl: telCtrl, label: 'Teléfono', teclado: TextInputType.phone),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           TextButton(
             onPressed: () {
               if (nombreCtrl.text.trim().isEmpty || telCtrl.text.trim().isEmpty) return;
-              Navigator.pop(
-                context,
-                ContactoEmergencia(
-                  nombre: nombreCtrl.text.trim(),
-                  relacion: relacionCtrl.text.trim(),
-                  telefono: telCtrl.text.trim(),
-                ),
-              );
+              Navigator.pop(ctx, ContactoEmergencia(
+                nombre: nombreCtrl.text.trim(),
+                relacion: relacionCtrl.text.trim(),
+                telefono: telCtrl.text.trim(),
+              ));
             },
             child: const Text('Agregar'),
           ),
@@ -180,7 +354,8 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
         actions: [
           TextButton(
             onPressed: _guardar,
-            child: const Text('Guardar', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            child: const Text('Guardar',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -198,91 +373,87 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
               const SizedBox(height: 20),
             ],
 
-            // ── Datos básicos ──
             _SeccionTitulo(titulo: 'Datos personales'),
-            _CampoTexto(
-              controlador: _nombreCtrl,
-              label: 'Nombre y apellido',
-              icono: Icons.person,
-              obligatorio: true,
-            ),
+            _CampoTexto(controlador: _nombreCtrl, label: 'Nombre y apellido', icono: Icons.person, obligatorio: true),
             const SizedBox(height: 12),
-            _SelectorGrupoSanguineo(
-              valorActual: _grupoSanguineo,
-              grupos: _gruposSanguineos,
-              onCambio: (v) => setState(() => _grupoSanguineo = v),
+            DropdownButtonFormField<String>(
+              value: _grupoSanguineo,
+              decoration: InputDecoration(
+                labelText: 'Grupo y factor sanguíneo',
+                prefixIcon: const Icon(Icons.bloodtype, color: rojoBorde),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: rojo, width: 2),
+                ),
+              ),
+              hint: const Text('Seleccioná tu grupo'),
+              items: _gruposSanguineos
+                  .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                  .toList(),
+              onChanged: (v) => setState(() => _grupoSanguineo = v),
             ),
 
-            // ── Obra Social ──
             _SeccionTitulo(titulo: 'Obra Social'),
             _CampoTexto(controlador: _obraSocialCtrl, label: 'Nombre (ej: OSDE 310)', icono: Icons.card_membership),
             const SizedBox(height: 12),
             _CampoTexto(controlador: _numeroSocioCtrl, label: 'Número de socio', icono: Icons.numbers),
 
-            // ── Listas ──
-            _SeccionLista(
-              titulo: 'Alergias',
-              icono: Icons.warning_amber,
-              items: _alergias,
-              onAgregar: () => _agregarItem(_alergias, 'alergia'),
-              onEliminar: (i) => setState(() => _alergias.removeAt(i)),
-            ),
-            _SeccionLista(
-              titulo: 'Enfermedades',
-              icono: Icons.local_hospital,
-              items: _enfermedades,
-              onAgregar: () => _agregarItem(_enfermedades, 'enfermedad'),
-              onEliminar: (i) => setState(() => _enfermedades.removeAt(i)),
-            ),
-            _SeccionLista(
-              titulo: 'Medicación',
-              icono: Icons.medication,
-              items: _medicacion,
-              onAgregar: () => _agregarItem(_medicacion, 'medicamento (ej: Ibuprofeno 400mg)'),
-              onEliminar: (i) => setState(() => _medicacion.removeAt(i)),
-            ),
-            _SeccionLista(
-              titulo: 'Vacunas',
-              icono: Icons.vaccines,
-              items: _vacunas,
-              onAgregar: () => _agregarItem(_vacunas, 'vacuna (ej: COVID-19 2022)'),
-              onEliminar: (i) => setState(() => _vacunas.removeAt(i)),
-            ),
-            _SeccionLista(
-              titulo: 'Restricciones alimentarias',
-              icono: Icons.no_meals,
-              items: _restricciones,
-              onAgregar: () => _agregarItem(_restricciones, 'restricción (ej: Sin gluten)'),
-              onEliminar: (i) => setState(() => _restricciones.removeAt(i)),
-            ),
+            // ── Alergias ──
+            _SeccionTitulo(titulo: 'Alergias'),
+            ..._alergias.asMap().entries.map((e) => _TarjetaItem(
+              titulo: e.value.nombre,
+              subtitulo: '${e.value.severidad} · ${e.value.reaccion}',
+              onEliminar: () => setState(() => _alergias.removeAt(e.key)),
+            )),
+            _BotonAgregar(texto: 'Agregar alergia', onTap: _agregarAlergia),
 
-            // ── Contactos de emergencia ──
+            // ── Enfermedades ──
+            _SeccionTitulo(titulo: 'Enfermedades'),
+            ..._enfermedades.asMap().entries.map((e) => _TarjetaItem(
+              titulo: e.value.nombre,
+              subtitulo: e.value.tratamiento.isEmpty ? 'Sin tratamiento registrado' : e.value.tratamiento,
+              onEliminar: () => setState(() => _enfermedades.removeAt(e.key)),
+            )),
+            _BotonAgregar(texto: 'Agregar enfermedad', onTap: _agregarEnfermedad),
+
+            // ── Medicación ──
+            _SeccionTitulo(titulo: 'Medicación'),
+            ..._medicacion.asMap().entries.map((e) => _TarjetaItem(
+              titulo: '${e.value.nombre} ${e.value.dosis}',
+              subtitulo: e.value.frecuencia.isEmpty ? '' : e.value.frecuencia,
+              onEliminar: () => setState(() => _medicacion.removeAt(e.key)),
+            )),
+            _BotonAgregar(texto: 'Agregar medicamento', onTap: _agregarMedicamento),
+
+            // ── Vacunas ──
+            _SeccionTitulo(titulo: 'Vacunas'),
+            ..._vacunas.asMap().entries.map((e) => _TarjetaItem(
+              titulo: e.value.nombre,
+              subtitulo: '${e.value.dosis} · ${e.value.fecha}',
+              onEliminar: () => setState(() => _vacunas.removeAt(e.key)),
+            )),
+            _BotonAgregar(texto: 'Agregar vacuna', onTap: _agregarVacuna),
+
+            // ── Restricciones ──
+            _SeccionTitulo(titulo: 'Restricciones alimentarias'),
+            ..._restricciones.asMap().entries.map((e) => _TarjetaItem(
+              titulo: e.value,
+              subtitulo: '',
+              onEliminar: () => setState(() => _restricciones.removeAt(e.key)),
+            )),
+            _BotonAgregar(texto: 'Agregar restricción', onTap: _agregarRestriccion),
+
+            // ── Contactos ──
             _SeccionTitulo(titulo: 'Contactos de emergencia'),
-            ..._contactos.asMap().entries.map(
-              (entry) => Card(
-                color: const Color(0xFFA03333),
-                margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                child: ListTile(
-                  title: Text(entry.value.nombre, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  subtitle: Text('${entry.value.relacion} · ${entry.value.telefono}', style: const TextStyle(color: Colors.white70)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.white70),
-                    onPressed: () => setState(() => _contactos.removeAt(entry.key)),
-                  ),
-                ),
-              ),
-            ),
-            OutlinedButton.icon(
-              onPressed: _agregarContacto,
-              icon: const Icon(Icons.person_add, color: Color(0xFFA03333)),
-              label: const Text('Agregar contacto', style: TextStyle(color: Color(0xFFA03333))),
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFA03333))),
-            ),
+            ..._contactos.asMap().entries.map((e) => _TarjetaItem(
+              titulo: e.value.nombre,
+              subtitulo: '${e.value.relacion} · ${e.value.telefono}',
+              onEliminar: () => setState(() => _contactos.removeAt(e.key)),
+            )),
+            _BotonAgregar(texto: 'Agregar contacto', onTap: _agregarContacto),
 
             const SizedBox(height: 30),
-
-            // ── Botón guardar ──
             ElevatedButton(
               onPressed: _guardar,
               style: ElevatedButton.styleFrom(
@@ -290,7 +461,8 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Guardar perfil', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              child: const Text('Guardar perfil',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 20),
           ],
@@ -301,7 +473,7 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
 }
 
 // ─────────────────────────────────────────────
-//  WIDGETS INTERNOS DEL FORMULARIO
+//  WIDGETS INTERNOS
 // ─────────────────────────────────────────────
 
 class _SeccionTitulo extends StatelessWidget {
@@ -312,10 +484,8 @@ class _SeccionTitulo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 24, bottom: 10),
-      child: Text(
-        titulo,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFA03333)),
-      ),
+      child: Text(titulo,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFA03333))),
     );
   }
 }
@@ -354,80 +524,81 @@ class _CampoTexto extends StatelessWidget {
   }
 }
 
-class _SelectorGrupoSanguineo extends StatelessWidget {
-  final String? valorActual;
-  final List<String> grupos;
-  final ValueChanged<String?> onCambio;
+// Campo simple para usar dentro de los diálogos
+class _Campo extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String label;
+  final TextInputType teclado;
 
-  const _SelectorGrupoSanguineo({
-    required this.valorActual,
-    required this.grupos,
-    required this.onCambio,
+  const _Campo({
+    required this.ctrl,
+    required this.label,
+    this.teclado = TextInputType.text,
   });
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      value: valorActual,
-      decoration: InputDecoration(
-        labelText: 'Grupo y factor sanguíneo',
-        prefixIcon: const Icon(Icons.bloodtype, color: Color(0xFFA03333)),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFF9183E), width: 2),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextField(
+        controller: ctrl,
+        keyboardType: teclado,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
-      hint: const Text('Seleccioná tu grupo'),
-      items: grupos.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
-      onChanged: onCambio,
     );
   }
 }
 
-class _SeccionLista extends StatelessWidget {
+class _TarjetaItem extends StatelessWidget {
   final String titulo;
-  final IconData icono;
-  final List<String> items;
-  final VoidCallback onAgregar;
-  final ValueChanged<int> onEliminar;
+  final String subtitulo;
+  final VoidCallback onEliminar;
 
-  const _SeccionLista({
+  const _TarjetaItem({
     required this.titulo,
-    required this.icono,
-    required this.items,
-    required this.onAgregar,
+    required this.subtitulo,
     required this.onEliminar,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SeccionTitulo(titulo: titulo),
-        ...items.asMap().entries.map(
-          (entry) => Card(
-            color: const Color(0xFFA03333),
-            margin: const EdgeInsets.only(bottom: 6),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            child: ListTile(
-              leading: Icon(icono, color: Colors.white70, size: 20),
-              title: Text(entry.value, style: const TextStyle(color: Colors.white)),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete, color: Colors.white70),
-                onPressed: () => onEliminar(entry.key),
-              ),
-            ),
-          ),
+    return Card(
+      color: const Color(0xFFA03333),
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: ListTile(
+        title: Text(titulo,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        subtitle: subtitulo.isEmpty
+            ? null
+            : Text(subtitulo,
+                style: const TextStyle(color: Colors.white70, fontStyle: FontStyle.italic)),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.white70),
+          onPressed: onEliminar,
         ),
-        OutlinedButton.icon(
-          onPressed: onAgregar,
-          icon: const Icon(Icons.add, color: Color(0xFFA03333)),
-          label: Text('Agregar $titulo', style: const TextStyle(color: Color(0xFFA03333))),
-          style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFA03333))),
-        ),
-      ],
+      ),
+    );
+  }
+}
+
+class _BotonAgregar extends StatelessWidget {
+  final String texto;
+  final VoidCallback onTap;
+
+  const _BotonAgregar({required this.texto, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: const Icon(Icons.add, color: Color(0xFFA03333)),
+      label: Text(texto, style: const TextStyle(color: Color(0xFFA03333))),
+      style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFA03333))),
     );
   }
 }
