@@ -1,8 +1,15 @@
+// ignore_for_file: slash_for_doc_comments
 import 'package:flutter/material.dart';
 import '../models/perfil_medico.dart';
 import '../services/auth_service.dart';
 import 'pantalla_editar_perfil.dart';
 
+/**
+ * Pantalla que muestra la lista de vacunas del usuario.
+ * Si no hay vacunas registradas, muestra un mensaje vacío.
+ * El botón de editar requiere autenticación biométrica antes de permitir cambios.
+ * perfil: Perfil médico del usuario que contiene la lista de vacunas.
+ */
 class PantallaVacunas extends StatelessWidget {
   final PerfilMedico perfil;
   const PantallaVacunas({super.key, required this.perfil});
@@ -16,6 +23,12 @@ class PantallaVacunas extends StatelessWidget {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          /**
+           * Botón de edición protegido por autenticación.
+           * Se encarga de pedir autenticación biométrica o PIN antes de
+           * navegar al formulario de edición.
+           * Return: PerfilMedico actualizado si el usuario guardó cambios, null si canceló.
+           */
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () async {
@@ -49,6 +62,11 @@ class PantallaVacunas extends StatelessWidget {
   }
 }
 
+/**
+ * Widget que muestra una tarjeta individual de vacuna.
+ * Muestra nombre, dosis, marca, fecha de aplicación y localidad.
+ * vacuna: Objeto Vacuna con todos sus campos de detalle.
+ */
 class _TarjetaVacuna extends StatelessWidget {
   final Vacuna vacuna;
   const _TarjetaVacuna({required this.vacuna});
@@ -95,6 +113,12 @@ class _TarjetaVacuna extends StatelessWidget {
   }
 }
 
+/**
+ * Widget que muestra una fila de label y valor con formato enriquecido.
+ * El label aparece en cursiva y más claro, el valor en blanco y negrita.
+ * label: Nombre del campo a mostrar (ej: 'Fecha').
+ * valor: Contenido del campo a mostrar (ej: '20/01/2021').
+ */
 class _Fila extends StatelessWidget {
   final String label;
   final String valor;

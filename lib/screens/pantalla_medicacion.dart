@@ -1,8 +1,16 @@
+// ignore_for_file: slash_for_doc_comments
 import 'package:flutter/material.dart';
 import '../models/perfil_medico.dart';
 import '../services/auth_service.dart';
 import 'pantalla_editar_perfil.dart';
 
+
+/**
+ * Pantalla que muestra la lista de medicamentos del usuario.
+ * Si no hay medicación registrada, muestra un mensaje vacío.
+ * El botón de editar requiere autenticación biométrica antes de permitir cambios.
+ * perfil: Perfil médico del usuario que contiene la lista de medicación.
+ */
 class PantallaMedicacion extends StatelessWidget {
   final PerfilMedico perfil;
   const PantallaMedicacion({super.key, required this.perfil});
@@ -16,6 +24,12 @@ class PantallaMedicacion extends StatelessWidget {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          /**
+           * Botón de edición protegido por autenticación.
+           * Se encarga de pedir autenticación biométrica o PIN antes de
+           * navegar al formulario de edición.
+           * Return: PerfilMedico actualizado si el usuario guardó cambios, null si canceló.
+           */
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () async {
@@ -49,6 +63,11 @@ class PantallaMedicacion extends StatelessWidget {
   }
 }
 
+/**
+ * Widget que muestra una tarjeta individual de medicamento.
+ * Muestra nombre, dosis, marca, frecuencia, vía de administración e indicación.
+ * medicamento: Objeto Medicamento con todos sus campos de detalle.
+ */
 class _TarjetaMedicamento extends StatelessWidget {
   final Medicamento medicamento;
   const _TarjetaMedicamento({required this.medicamento});
@@ -101,6 +120,12 @@ class _TarjetaMedicamento extends StatelessWidget {
   }
 }
 
+/**
+ * Widget que muestra una fila de label y valor con formato enriquecido.
+ * El label aparece en cursiva y más claro, el valor en blanco normal.
+ * label: Nombre del campo a mostrar (ej: 'Frecuencia').
+ * valor: Contenido del campo a mostrar (ej: 'Mañana y noche').
+ */
 class _Fila extends StatelessWidget {
   final String label;
   final String valor;

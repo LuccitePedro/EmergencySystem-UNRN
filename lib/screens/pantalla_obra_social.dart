@@ -1,8 +1,15 @@
+// ignore_for_file: slash_for_doc_comments
 import 'package:flutter/material.dart';
 import '../models/perfil_medico.dart';
 import '../services/auth_service.dart';
 import 'pantalla_editar_perfil.dart';
 
+/**
+ * Pantalla que muestra los datos de obra social del usuario.
+ * Muestra el nombre de la obra social y el número de socio.
+ * El botón de editar requiere autenticación biométrica antes de permitir cambios.
+ * perfil: Perfil médico del usuario con los datos de obra social.
+ */
 class PantallaObraSocial extends StatelessWidget {
   final PerfilMedico perfil;
   const PantallaObraSocial({super.key, required this.perfil});
@@ -16,6 +23,12 @@ class PantallaObraSocial extends StatelessWidget {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          /**
+           * Botón de edición protegido por autenticación.
+           * Se encarga de pedir autenticación biométrica o PIN antes de
+           * navegar al formulario de edición.
+           * Return: PerfilMedico actualizado si el usuario guardó cambios, null si canceló.
+           */
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () async {
@@ -54,6 +67,12 @@ class PantallaObraSocial extends StatelessWidget {
   }
 }
 
+/**
+ * Widget que muestra una tarjeta con un campo de dato simple.
+ * Muestra el label en gris clarito y el valor en blanco y negrita.
+ * label: Nombre del campo (ej: 'Obra Social').
+ * valor: Contenido del campo (ej: 'OSDE 310').
+ */
 class _TarjetaDato extends StatelessWidget {
   final String label;
   final String valor;

@@ -1,8 +1,15 @@
+// ignore_for_file: slash_for_doc_comments
 import 'package:flutter/material.dart';
 import '../models/perfil_medico.dart';
 import '../services/auth_service.dart';
 import 'pantalla_editar_perfil.dart';
 
+/**
+ * Pantalla que muestra la lista de restricciones alimentarias del usuario.
+ * Si no hay restricciones registradas, muestra un mensaje vacío.
+ * El botón de editar requiere autenticación biométrica antes de permitir cambios.
+ * perfil: Perfil médico del usuario que contiene la lista de restricciones alimentarias.
+ */
 class PantallaRestriccionesAlimentarias extends StatelessWidget {
   final PerfilMedico perfil;
   const PantallaRestriccionesAlimentarias({super.key, required this.perfil});
@@ -16,6 +23,12 @@ class PantallaRestriccionesAlimentarias extends StatelessWidget {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          /**
+           * Botón de edición protegido por autenticación.
+           * Se encarga de pedir autenticación biométrica o PIN antes de
+           * navegar al formulario de edición.
+           * Return: PerfilMedico actualizado si el usuario guardó cambios, null si canceló.
+           */
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () async {

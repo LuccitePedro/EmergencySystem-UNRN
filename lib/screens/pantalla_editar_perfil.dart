@@ -1,7 +1,15 @@
+// ignore_for_file: slash_for_doc_comments
 import 'package:flutter/material.dart';
 import '../models/perfil_medico.dart';
 import '../services/storage_service.dart';
 
+/**
+ * Pantalla de formulario para crear o editar el perfil médico completo.
+ * Se usa tanto en el primer uso de la app como para ediciones posteriores.
+ * perfilActual: Perfil médico con los datos actuales a pre-cargar en el formulario.
+ * esPrimerUso: Indica si es la primera vez que el usuario abre la app.
+ *              Si es true, muestra un mensaje de bienvenida y marca el onboarding como completado al guardar.
+ */
 class PantallaEditarPerfil extends StatefulWidget {
   final PerfilMedico perfilActual;
   final bool esPrimerUso;
@@ -63,6 +71,12 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     super.dispose();
   }
 
+/**
+ * Se encarga de guardar el perfil médico con los datos del formulario.
+ * Valida que los campos obligatorios estén completos antes de guardar.
+ * Persiste los datos en el dispositivo usando StorageService.
+ * Return: Navega hacia atrás pasando el PerfilMedico actualizado como resultado.
+ */
   Future<void> _guardar() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -84,7 +98,11 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     if (mounted) Navigator.pop(context, perfilNuevo);
   }
 
-  // ── Diálogo para agregar Alergia ──
+/**
+ * Se encarga de mostrar un diálogo para agregar una nueva alergia.
+ * Incluye campos para nombre, reacción, severidad y qué hacer en caso de reacción.
+ * Return: Agrega la Alergia a la lista interna si el usuario confirmó.
+ */
   Future<void> _agregarAlergia() async {
     final nombreCtrl = TextEditingController();
     final reaccionCtrl = TextEditingController();
@@ -136,8 +154,11 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     if (resultado != null) setState(() => _alergias.add(resultado));
   }
 
-  // ── Diálogo para agregar Enfermedad ──
-  Future<void> _agregarEnfermedad() async {
+/**
+ * Se encarga de mostrar un diálogo para agregar una nueva enfermedad.
+ * Incluye campos para nombre, tratamiento actual y fecha de diagnóstico.
+ * Return: Agrega la Enfermedad a la lista interna si el usuario confirmó.
+ */  Future<void> _agregarEnfermedad() async {
     final nombreCtrl = TextEditingController();
     final tratamientoCtrl = TextEditingController();
     final fechaCtrl = TextEditingController();
@@ -175,7 +196,11 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     if (resultado != null) setState(() => _enfermedades.add(resultado));
   }
 
-  // ── Diálogo para agregar Medicamento ──
+/**
+ * Se encarga de mostrar un diálogo para agregar un nuevo medicamento.
+ * Incluye campos para nombre, dosis, marca, frecuencia, vía e indicación.
+ * Return: Agrega el Medicamento a la lista interna si el usuario confirmó.
+ */
   Future<void> _agregarMedicamento() async {
     final nombreCtrl = TextEditingController();
     final dosisCtrl = TextEditingController();
@@ -233,7 +258,11 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     if (resultado != null) setState(() => _medicacion.add(resultado));
   }
 
-  // ── Diálogo para agregar Vacuna ──
+/**
+ * Se encarga de mostrar un diálogo para agregar una nueva vacuna.
+ * Incluye campos para nombre, dosis, marca, fecha y localidad.
+ * Return: Agrega la Vacuna a la lista interna si el usuario confirmó.
+ */
   Future<void> _agregarVacuna() async {
     final nombreCtrl = TextEditingController();
     final dosisCtrl = TextEditingController();
@@ -278,7 +307,11 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     if (resultado != null) setState(() => _vacunas.add(resultado));
   }
 
-  // ── Diálogo para agregar restricción alimentaria ──
+/**
+ * Se encarga de mostrar un diálogo para agregar una restricción alimentaria.
+ * Solo requiere el nombre de la restricción (ej: Sin gluten).
+ * Return: Agrega la restricción a la lista interna si el usuario confirmó.
+ */
   Future<void> _agregarRestriccion() async {
     final ctrl = TextEditingController();
     final resultado = await showDialog<String>(
@@ -301,7 +334,11 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     if (resultado != null) setState(() => _restricciones.add(resultado));
   }
 
-  // ── Diálogo para agregar contacto ──
+/**
+ * Se encarga de mostrar un diálogo para agregar un contacto de emergencia.
+ * Incluye campos para nombre, relación con el usuario y teléfono.
+ * Return: Agrega el ContactoEmergencia a la lista interna si el usuario confirmó.
+ */
   Future<void> _agregarContacto() async {
     final nombreCtrl = TextEditingController();
     final relacionCtrl = TextEditingController();

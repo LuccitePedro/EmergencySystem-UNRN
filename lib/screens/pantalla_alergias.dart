@@ -1,7 +1,17 @@
+// ignore_for_file: slash_for_doc_comments
+
 import 'package:flutter/material.dart';
 import '../models/perfil_medico.dart';
 import '../services/auth_service.dart';
 import 'pantalla_editar_perfil.dart';
+
+
+/**
+ * Pantalla que muestra la lista de alergias del usuario.
+ * Si no hay alergias registradas, muestra un mensaje vacío.
+ * El botón de editar requiere autenticación biométrica antes de permitir cambios.
+ * perfil: Perfil médico del usuario que contiene la lista de alergias.
+ */
 
 class PantallaAlergias extends StatelessWidget {
   final PerfilMedico perfil;
@@ -16,6 +26,13 @@ class PantallaAlergias extends StatelessWidget {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          /**
+           * Botón de edición protegido por autenticación.
+           * Se encarga de pedir autenticación biométrica o PIN antes de
+           * navegar al formulario de edición. Si el usuario no se autentica,
+           * no ocurre ninguna acción.
+           * Return: PerfilMedico actualizado si el usuario guardó cambios, null si canceló.
+           */
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () async {
@@ -48,10 +65,20 @@ class PantallaAlergias extends StatelessWidget {
   }
 }
 
+/**
+ * Widget que muestra una tarjeta individual de alergia.
+ * El color de la tarjeta varía según la severidad:
+ * Grave = rojo oscuro, Moderada = naranja oscuro, Leve = rojo estándar.
+ * alergia: Objeto Alergia con nombre, severidad, reacción y qué hacer.
+ */
 class _TarjetaAlergia extends StatelessWidget {
   final Alergia alergia;
   const _TarjetaAlergia({required this.alergia});
 
+/**
+   * Se encarga de retornar el color de fondo de la tarjeta según la severidad.
+   * Return: Color correspondiente a la severidad de la alergia.
+   */
   Color _colorSeveridad() {
     switch (alergia.severidad) {
       case 'Grave': return Colors.red.shade900;

@@ -1,3 +1,4 @@
+// ignore_for_file: slash_for_doc_comments
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -5,10 +6,23 @@ import '../models/perfil_medico.dart';
 import '../services/auth_service.dart';
 import 'pantalla_editar_perfil.dart';
 
+/**
+ * Pantalla que muestra la lista de contactos de emergencia del usuario.
+ * Cada contacto tiene un botón para llamar directamente.
+ * En modo desarrollo (debug) la llamada se simula con un diálogo.
+ * El botón de editar requiere autenticación biométrica antes de permitir cambios.
+ * perfil: Perfil médico del usuario que contiene la lista de contactos.
+ */
 class PantallaContactos extends StatelessWidget {
   final PerfilMedico perfil;
   const PantallaContactos({super.key, required this.perfil});
 
+/**
+   * Se encarga de iniciar una llamada telefónica al número indicado.
+   * En modo debug muestra un diálogo en lugar de llamar de verdad.
+   * context: Contexto necesario para mostrar el diálogo en modo debug.
+   * telefono: Número de teléfono al que se realizará la llamada.
+   */
   Future<void> _llamar(BuildContext context, String telefono) async {
     if (kDebugMode) {
       showDialog(
@@ -36,6 +50,12 @@ class PantallaContactos extends StatelessWidget {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          /**
+           * Botón de edición protegido por autenticación.
+           * Se encarga de pedir autenticación biométrica o PIN antes de
+           * navegar al formulario de edición.
+           * Return: PerfilMedico actualizado si el usuario guardó cambios, null si canceló.
+           */
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () async {
@@ -95,6 +115,10 @@ class PantallaContactos extends StatelessWidget {
                             ],
                           ),
                         ),
+                        /**
+                         * Botón de llamada rápida al contacto.
+                         * Se encarga de iniciar la llamada telefónica al número del contacto.
+                         */
                         IconButton(
                           icon: const Icon(Icons.phone,
                               color: Colors.greenAccent, size: 32),
