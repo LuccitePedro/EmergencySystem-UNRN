@@ -5,16 +5,14 @@ import 'services/notificacion_service.dart';
 import 'services/storage_service.dart';
 import 'services/auth_service.dart';
 import 'models/perfil_medico.dart';
-import 'widgets/curved_header.dart';
+import 'theme/colores.dart';
+import 'widgets/encabezado.dart';
+import 'utils/texto.dart';
 import 'screens/pantalla_editar_perfil.dart';
 import 'screens/pantalla_categoria_carousel.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await NotificacionService.inicializar(navigatorKey);
-  await NotificacionService.mostrarNotificacionPermanente();
+void main() {
+  // La primera pantalla se dibuja enseguida; permisos y notificación se resuelven después
   runApp(const EmergenciaApp());
 }
 
@@ -24,10 +22,9 @@ class EmergenciaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      title: 'App de Emergencia',
-      theme: ThemeData(primarySwatch: Colors.red),
+      title: 'EmergencySystem',
+      theme: temaApp(),
       home: const PantallaCarga(),
     );
   }
@@ -55,8 +52,14 @@ class _PantallaCargaState extends State<PantallaCarga> {
     final perfil = await StorageService.cargarPerfil();
     if (!mounted) return;
 
+    // Sin await: no hace falta esperar el permiso de notificaciones para mostrar el perfil
+    NotificacionService.mostrarNotificacionPermanente(perfil);
+
+    var perfilInicial = perfil;
     if (esPrimero) {
-      Navigator.pushReplacement(
+      // Se usa push (no pushReplacement) para que al guardar el formulario vuelva acá
+      // y se pueda seguir a la pantalla principal sin reiniciar la app.
+      final completado = await Navigator.push<PerfilMedico>(
         context,
         MaterialPageRoute(
           builder: (_) => PantallaEditarPerfil(
@@ -65,18 +68,19 @@ class _PantallaCargaState extends State<PantallaCarga> {
           ),
         ),
       );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => PantallaPerfilMedico(perfil: perfil)),
-      );
+      if (!mounted) return;
+      perfilInicial = completado ?? perfil;
     }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => PantallaPerfilMedico(perfil: perfilInicial)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFFF9183E),
+      backgroundColor: Colores.rojo,
       body: Center(child: CircularProgressIndicator(color: Colors.white)),
     );
   }
@@ -102,53 +106,38 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
     _perfil = widget.perfil;
   }
 
-  Future<void> _llamar911() async {
+  void _avisar(String titulo, String mensaje) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(titulo),
+        content: Text(mensaje),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+      ),
+    );
+  }
+
+  /// En modo debug muestra un diálogo en vez de llamar, para no hacer llamadas reales al probar.
+  Future<void> _llamar(String telefono, String nombre) async {
     if (kDebugMode) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Modo desarrollo'),
-          content: const Text('En producción, esto llamaría al 911.'),
-          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-        ),
-      );
+      _avisar('Modo desarrollo', 'En producción, esto llamaría a $nombre ($telefono).');
       return;
     }
-    final uri = Uri(scheme: 'tel', path: '911');
+    final uri = Uri(scheme: 'tel', path: telefono);
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  Future<void> _llamarContactoEmergencia() async {
-    if (_perfil.contactos.isEmpty) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Sin contacto'),
-          content: const Text('No hay ningún contacto de emergencia registrado.'),
-          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-        ),
-      );
+  void _llamarContactoEmergencia(ContactoEmergencia? c) {
+    if (c == null) {
+      _avisar('Sin contacto', 'No hay ningún contacto de emergencia registrado.');
       return;
     }
-    if (kDebugMode) {
-      final c = _perfil.contactos.first;
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Modo desarrollo'),
-          content: Text('En producción, esto llamaría a ${c.nombre} (${c.telefono}).'),
-          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-        ),
-      );
-      return;
-    }
-    final uri = Uri(scheme: 'tel', path: _perfil.contactos.first.telefono);
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
+    _llamar(c.telefono, c.nombre);
   }
 
   Future<void> _irAEditar() async {
     final autenticado = await AuthService.pedirAutenticacion();
-    if (!autenticado || !context.mounted) return;
+    if (!autenticado || !mounted) return;
     final actualizado = await Navigator.push<PerfilMedico>(
       context,
       MaterialPageRoute(builder: (_) => PantallaEditarPerfil(perfilActual: _perfil)),
@@ -177,120 +166,95 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
 
   @override
   Widget build(BuildContext context) {
-    final contactoNombre = _perfil.contactos.isEmpty
-        ? 'Emergencia'
-        : _perfil.contactos.first.nombre.split(' ').first;
+    // Se muestran hasta 2 contactos; si no hay ninguno, un botón que avisa que falta cargarlo
+    final List<ContactoEmergencia?> contactos =
+        _perfil.contactos.isEmpty ? [null] : _perfil.contactos.take(2).toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Header curvo
-          CurvedHeader(
-            height: 160,
-            child: Stack(
-              children: [
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 48, 44),
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFA03333),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Text(
-                        _perfil.nombre.isEmpty ? 'Mi perfil' : _perfil.nombre,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 4,
-                  child: IconButton(
-                    icon: const Icon(Icons.info_outline, color: Colors.white),
-                    onPressed: _irAEditar,
-                  ),
-                ),
-              ],
-            ),
+          Encabezado(
+            titulo: _perfil.nombre.isEmpty ? 'Mi perfil' : _perfil.nombre,
+            subtitulo: 'Tarjeta médica de emergencia',
+            onEditar: _irAEditar,
           ),
-
-          // Cuerpo
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Tarjeta info vital
-                  Card(
-                    color: const Color(0xFFA03333),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _LineaInfo('Alergias',
-                              _perfil.alergias.isEmpty ? 'No' : 'Si'),
-                          _LineaInfo('Enfermedad',
-                              _perfil.enfermedades.isEmpty ? 'No' : 'Si'),
-                          _LineaInfo('Medicación',
-                              _perfil.medicacion.isEmpty ? 'No' : 'Si'),
-                          _LineaInfo('Grupo y factor',
-                              _grupoConDescripcion(_perfil.grupoSanguineo)),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _BotonLlamada(
-                                icono: Icons.phone,
-                                colorFondo: Colors.green.shade600,
-                                titulo: '911',
-                                onTap: _llamar911,
-                              ),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              children: [
+                // Tarjeta de info vital
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _LineaInfo(Icons.bloodtype_outlined, 'Grupo y factor',
+                            _grupoConDescripcion(_perfil.grupoSanguineo)),
+                        _LineaInfo(
+                            Icons.warning_amber_rounded,
+                            'Alergias',
+                            resumirLista(
+                                _perfil.alergias.map((a) => a.severidad.isEmpty
+                                    ? a.nombre
+                                    : '${a.nombre} (${a.severidad})'),
+                                'No registradas')),
+                        _LineaInfo(Icons.monitor_heart_outlined, 'Enfermedades',
+                            resumirLista(_perfil.enfermedades.map((e) => e.nombre), 'No registradas')),
+                        _LineaInfo(Icons.medication_outlined, 'Medicación',
+                            resumirLista(_perfil.medicacion.map((m) => m.nombre), 'No registrada')),
+                        const Divider(color: Colors.white24, height: 28),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _BotonLlamada(
+                              icono: Icons.phone,
+                              colorFondo: Colores.verde,
+                              titulo: '911',
+                              onTap: () => _llamar('911', 'el 911'),
+                            ),
+                            for (final c in contactos)
                               _BotonLlamada(
                                 icono: Icons.person,
-                                colorFondo: Colors.grey.shade500,
-                                titulo: contactoNombre,
-                                onTap: _llamarContactoEmergencia,
+                                colorFondo: Colores.gris,
+                                titulo: c == null ? 'Emergencia' : c.nombre.split(' ').first,
+                                onTap: () => _llamarContactoEmergencia(c),
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-                  // Grilla de categorías
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.8,
-                    children: [
-                      _BotonCategoria(texto: 'Enfermedades', onTap: () => _abrirCategoria(0)),
-                      _BotonCategoria(texto: 'Alergias', onTap: () => _abrirCategoria(1)),
-                      _BotonCategoria(texto: 'Número de\nRespaldo', onTap: () => _abrirCategoria(2)),
-                      _BotonCategoria(texto: 'Vacunas', onTap: () => _abrirCategoria(3)),
-                      _BotonCategoria(texto: 'Obra Social', onTap: () => _abrirCategoria(4)),
-                      _BotonCategoria(texto: 'Medicación', onTap: () => _abrirCategoria(5)),
-                    ],
-                  ),
-                ],
-              ),
+                // Grilla de categorías: 3 columnas en tablet, 2 en teléfono.
+                // Se usa Wrap centrado para que la última fila incompleta quede en el medio.
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const espacio = 12.0;
+                    final columnas = constraints.maxWidth > 600 ? 3 : 2;
+                    final ancho = (constraints.maxWidth - espacio * (columnas - 1)) / columnas;
+                    return Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: espacio,
+                      runSpacing: espacio,
+                      children: [
+                        for (var i = 0; i < categorias.length; i++)
+                          SizedBox(
+                            width: ancho,
+                            height: ancho / 1.5,
+                            child: _BotonCategoria(
+                              categoria: categorias[i],
+                              onTap: () => _abrirCategoria(i),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ],
@@ -304,26 +268,34 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
 // ─────────────────────────────────────────────
 
 class _LineaInfo extends StatelessWidget {
+  final IconData icono;
   final String label;
   final String valor;
-  const _LineaInfo(this.label, this.valor);
+  const _LineaInfo(this.icono, this.label, this.valor);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: RichText(
-        text: TextSpan(children: [
-          TextSpan(
-            text: '$label: ',
-            style: const TextStyle(
-                color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icono, color: Colors.white70, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(TextSpan(children: [
+              TextSpan(
+                text: '$label: ',
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              TextSpan(
+                text: valor,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ])),
           ),
-          TextSpan(
-            text: valor,
-            style: const TextStyle(color: Colors.white, fontSize: 15),
-          ),
-        ]),
+        ],
       ),
     );
   }
@@ -344,55 +316,59 @@ class _BotonLlamada extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 62,
-            height: 62,
-            decoration: BoxDecoration(
-              color: colorFondo,
-              borderRadius: BorderRadius.circular(16),
+    return Column(
+      children: [
+        Material(
+          color: colorFondo,
+          elevation: 3,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              width: 72,
+              height: 72,
+              child: Icon(icono, color: Colors.white, size: 36),
             ),
-            child: Icon(icono, color: Colors.white, size: 32),
           ),
-          const SizedBox(height: 6),
-          Text(titulo,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600)),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        Text(titulo,
+            style: const TextStyle(
+                color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }
 
 class _BotonCategoria extends StatelessWidget {
-  final String texto;
+  final Categoria categoria;
   final VoidCallback onTap;
 
-  const _BotonCategoria({required this.texto, required this.onTap});
+  const _BotonCategoria({required this.categoria, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFA03333),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Text(
-            texto,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w500),
-          ),
+    return Material(
+      color: Colores.bordo,
+      elevation: 2,
+      shadowColor: Colors.black26,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(categoria.icono, color: Colors.white, size: 34),
+            const SizedBox(height: 8),
+            Text(
+              categoria.titulo,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ],
         ),
       ),
     );

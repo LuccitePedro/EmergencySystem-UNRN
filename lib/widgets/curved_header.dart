@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/colores.dart';
 
 class CurvedHeader extends StatelessWidget {
   final Widget child;
@@ -15,7 +16,7 @@ class CurvedHeader extends StatelessWidget {
     return ClipPath(
       clipper: _CurvedClipper(),
       child: Container(
-        color: const Color(0xFFF9183E),
+        color: Colores.rojo,
         height: height,
         width: double.infinity,
         child: SafeArea(bottom: false, child: child),

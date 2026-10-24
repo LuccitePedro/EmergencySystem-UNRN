@@ -1,7 +1,10 @@
 // ignore_for_file: slash_for_doc_comments
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/perfil_medico.dart';
 import '../services/storage_service.dart';
+import '../services/notificacion_service.dart';
+import '../theme/colores.dart';
 
 /**
  * Pantalla de formulario para crear o editar el perfil médico completo.
@@ -45,6 +48,8 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
   ];
 
   static const _severidades = ['Leve', 'Moderada', 'Grave'];
+
+  static const _maxContactos = 2;
   static const _vias = ['Oral', 'Inyectable', 'Inhalada', 'Sublingual', 'Tópica'];
 
   @override
@@ -95,6 +100,7 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
 
     await StorageService.guardarPerfil(perfilNuevo);
     if (widget.esPrimerUso) await StorageService.marcarPrimerUsoCompletado();
+    await NotificacionService.mostrarNotificacionPermanente(perfilNuevo);
     if (mounted) Navigator.pop(context, perfilNuevo);
   }
 
@@ -120,14 +126,16 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
               children: [
                 _Campo(ctrl: nombreCtrl, label: 'Nombre (ej: Penicilina)'),
                 _Campo(ctrl: reaccionCtrl, label: 'Reacción (ej: urticaria)'),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: severidad,
-                  hint: const Text('Severidad'),
-                  items: _severidades
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                      .toList(),
-                  onChanged: (v) => setStateDialog(() => severidad = v),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: DropdownButtonFormField<String>(
+                    initialValue: severidad,
+                    decoration: const InputDecoration(labelText: 'Severidad'),
+                    items: _severidades
+                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                        .toList(),
+                    onChanged: (v) => setStateDialog(() => severidad = v),
+                  ),
                 ),
                 _Campo(ctrl: queHacerCtrl, label: 'Qué hacer (ej: aplicar EpiPen)'),
               ],
@@ -162,26 +170,30 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     final nombreCtrl = TextEditingController();
     final tratamientoCtrl = TextEditingController();
     final fechaCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     final resultado = await showDialog<Enfermedad>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Agregar enfermedad'),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _Campo(ctrl: nombreCtrl, label: 'Nombre (ej: Diabetes tipo 2)'),
-              _Campo(ctrl: tratamientoCtrl, label: 'Tratamiento actual'),
-              _Campo(ctrl: fechaCtrl, label: 'Fecha de diagnóstico (ej: 2019)'),
-            ],
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _Campo(ctrl: nombreCtrl, label: 'Nombre (ej: Diabetes tipo 2)'),
+                _Campo(ctrl: tratamientoCtrl, label: 'Tratamiento actual'),
+                _CampoFecha(ctrl: fechaCtrl, label: 'Fecha de diagnóstico'),
+              ],
+            ),
           ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           TextButton(
             onPressed: () {
-              if (nombreCtrl.text.trim().isEmpty) return;
+              if (nombreCtrl.text.trim().isEmpty || !formKey.currentState!.validate()) return;
               Navigator.pop(ctx, Enfermedad(
                 nombre: nombreCtrl.text.trim(),
                 tratamiento: tratamientoCtrl.text.trim(),
@@ -222,14 +234,16 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
                 _Campo(ctrl: dosisCtrl, label: 'Dosis (ej: 500mg)'),
                 _Campo(ctrl: marcaCtrl, label: 'Marca (opcional)'),
                 _Campo(ctrl: frecuenciaCtrl, label: 'Frecuencia (ej: mañana y noche)'),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: via,
-                  hint: const Text('Vía de administración'),
-                  items: _vias
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-                      .toList(),
-                  onChanged: (v) => setStateDialog(() => via = v),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: DropdownButtonFormField<String>(
+                    initialValue: via,
+                    decoration: const InputDecoration(labelText: 'Vía de administración'),
+                    items: _vias
+                        .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                        .toList(),
+                    onChanged: (v) => setStateDialog(() => via = v),
+                  ),
                 ),
                 _Campo(ctrl: indicacionCtrl, label: 'Para qué es (ej: para la presión)'),
               ],
@@ -269,28 +283,32 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     final marcaCtrl = TextEditingController();
     final fechaCtrl = TextEditingController();
     final localidadCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     final resultado = await showDialog<Vacuna>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Agregar vacuna'),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _Campo(ctrl: nombreCtrl, label: 'Nombre (ej: COVID-19)'),
-              _Campo(ctrl: dosisCtrl, label: 'Dosis (ej: Primera, Única)'),
-              _Campo(ctrl: marcaCtrl, label: 'Marca (ej: Pfizer BioNTech)'),
-              _Campo(ctrl: fechaCtrl, label: 'Fecha (ej: 20/01/2021)'),
-              _Campo(ctrl: localidadCtrl, label: 'Localidad (ej: Hospital Bariloche)'),
-            ],
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _Campo(ctrl: nombreCtrl, label: 'Nombre (ej: COVID-19)'),
+                _Campo(ctrl: dosisCtrl, label: 'Dosis (ej: Primera, Única)'),
+                _Campo(ctrl: marcaCtrl, label: 'Marca (ej: Pfizer BioNTech)'),
+                _CampoFecha(ctrl: fechaCtrl, label: 'Fecha de aplicación'),
+                _Campo(ctrl: localidadCtrl, label: 'Localidad (ej: Hospital Bariloche)'),
+              ],
+            ),
           ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           TextButton(
             onPressed: () {
-              if (nombreCtrl.text.trim().isEmpty) return;
+              if (nombreCtrl.text.trim().isEmpty || !formKey.currentState!.validate()) return;
               Navigator.pop(ctx, Vacuna(
                 nombre: nombreCtrl.text.trim(),
                 dosis: dosisCtrl.text.trim(),
@@ -377,22 +395,15 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
 
   @override
   Widget build(BuildContext context) {
-    const Color rojo = Color(0xFFF9183E);
-    const Color rojoBorde = Color(0xFFA03333);
-
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: rojo,
-        title: Text(
-          widget.esPrimerUso ? 'Completá tu perfil' : 'Editar perfil',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(widget.esPrimerUso ? 'Completá tu perfil' : 'Editar perfil'),
         actions: [
           TextButton(
             onPressed: _guardar,
+            style: TextButton.styleFrom(foregroundColor: Colors.white),
             child: const Text('Guardar',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -404,25 +415,20 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
             if (widget.esPrimerUso) ...[
               const Text(
                 '¡Bienvenido! Completá tus datos para que en una emergencia cualquiera pueda ayudarte.',
-                style: TextStyle(fontSize: 15, color: Colors.black54),
+                style: TextStyle(fontSize: 15, color: Colores.textoSuave),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
             ],
 
-            _SeccionTitulo(titulo: 'Datos personales'),
-            _CampoTexto(controlador: _nombreCtrl, label: 'Nombre y apellido', icono: Icons.person, obligatorio: true),
+            _SeccionTitulo(titulo: 'Datos personales', icono: Icons.person_outline),
+            _CampoTexto(controlador: _nombreCtrl, label: 'Nombre y apellido', icono: Icons.person_outline, obligatorio: true),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _grupoSanguineo,
-              decoration: InputDecoration(
+              initialValue: _grupoSanguineo,
+              decoration: const InputDecoration(
                 labelText: 'Grupo y factor sanguíneo',
-                prefixIcon: const Icon(Icons.bloodtype, color: rojoBorde),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: rojo, width: 2),
-                ),
+                prefixIcon: Icon(Icons.bloodtype_outlined),
               ),
               hint: const Text('Seleccioná tu grupo'),
               items: _gruposSanguineos
@@ -431,22 +437,22 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
               onChanged: (v) => setState(() => _grupoSanguineo = v),
             ),
 
-            _SeccionTitulo(titulo: 'Obra Social'),
-            _CampoTexto(controlador: _obraSocialCtrl, label: 'Nombre (ej: OSDE 310)', icono: Icons.card_membership),
+            _SeccionTitulo(titulo: 'Obra Social', icono: Icons.badge_outlined),
+            _CampoTexto(controlador: _obraSocialCtrl, label: 'Nombre (ej: OSDE 310)', icono: Icons.badge_outlined),
             const SizedBox(height: 12),
             _CampoTexto(controlador: _numeroSocioCtrl, label: 'Número de socio', icono: Icons.numbers),
 
             // ── Alergias ──
-            _SeccionTitulo(titulo: 'Alergias'),
+            _SeccionTitulo(titulo: 'Alergias', icono: Icons.warning_amber_rounded),
             ..._alergias.asMap().entries.map((e) => _TarjetaItem(
               titulo: e.value.nombre,
-              subtitulo: '${e.value.severidad} · ${e.value.reaccion}',
+              subtitulo: _unir([e.value.severidad, e.value.reaccion]),
               onEliminar: () => setState(() => _alergias.removeAt(e.key)),
             )),
             _BotonAgregar(texto: 'Agregar alergia', onTap: _agregarAlergia),
 
             // ── Enfermedades ──
-            _SeccionTitulo(titulo: 'Enfermedades'),
+            _SeccionTitulo(titulo: 'Enfermedades', icono: Icons.monitor_heart_outlined),
             ..._enfermedades.asMap().entries.map((e) => _TarjetaItem(
               titulo: e.value.nombre,
               subtitulo: e.value.tratamiento.isEmpty ? 'Sin tratamiento registrado' : e.value.tratamiento,
@@ -455,7 +461,7 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
             _BotonAgregar(texto: 'Agregar enfermedad', onTap: _agregarEnfermedad),
 
             // ── Medicación ──
-            _SeccionTitulo(titulo: 'Medicación'),
+            _SeccionTitulo(titulo: 'Medicación', icono: Icons.medication_outlined),
             ..._medicacion.asMap().entries.map((e) => _TarjetaItem(
               titulo: '${e.value.nombre} ${e.value.dosis}',
               subtitulo: e.value.frecuencia.isEmpty ? '' : e.value.frecuencia,
@@ -464,16 +470,16 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
             _BotonAgregar(texto: 'Agregar medicamento', onTap: _agregarMedicamento),
 
             // ── Vacunas ──
-            _SeccionTitulo(titulo: 'Vacunas'),
+            _SeccionTitulo(titulo: 'Vacunas', icono: Icons.vaccines_outlined),
             ..._vacunas.asMap().entries.map((e) => _TarjetaItem(
               titulo: e.value.nombre,
-              subtitulo: '${e.value.dosis} · ${e.value.fecha}',
+              subtitulo: _unir([e.value.dosis, e.value.fecha]),
               onEliminar: () => setState(() => _vacunas.removeAt(e.key)),
             )),
             _BotonAgregar(texto: 'Agregar vacuna', onTap: _agregarVacuna),
 
             // ── Restricciones ──
-            _SeccionTitulo(titulo: 'Restricciones alimentarias'),
+            _SeccionTitulo(titulo: 'Restricciones alimentarias', icono: Icons.no_food_outlined),
             ..._restricciones.asMap().entries.map((e) => _TarjetaItem(
               titulo: e.value,
               subtitulo: '',
@@ -482,24 +488,27 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
             _BotonAgregar(texto: 'Agregar restricción', onTap: _agregarRestriccion),
 
             // ── Contactos ──
-            _SeccionTitulo(titulo: 'Contactos de emergencia'),
+            _SeccionTitulo(titulo: 'Contactos de emergencia', icono: Icons.contact_phone_outlined),
             ..._contactos.asMap().entries.map((e) => _TarjetaItem(
               titulo: e.value.nombre,
-              subtitulo: '${e.value.relacion} · ${e.value.telefono}',
+              subtitulo: _unir([e.value.relacion, e.value.telefono]),
               onEliminar: () => setState(() => _contactos.removeAt(e.key)),
             )),
-            _BotonAgregar(texto: 'Agregar contacto', onTap: _agregarContacto),
+            // Máximo 2 contactos: son los que aparecen como botones de llamada en la pantalla principal
+            if (_contactos.length < _maxContactos)
+              _BotonAgregar(texto: 'Agregar contacto', onTap: _agregarContacto),
 
             const SizedBox(height: 30),
-            ElevatedButton(
+            FilledButton.icon(
               onPressed: _guardar,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: rojo,
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('Guardar perfil'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colores.rojo,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              child: const Text('Guardar perfil',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 20),
           ],
@@ -513,16 +522,26 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
 //  WIDGETS INTERNOS
 // ─────────────────────────────────────────────
 
+// Une los datos con " · " salteando los vacíos (evita subtítulos como "Leve · ")
+String _unir(List<String> partes) => partes.where((p) => p.isNotEmpty).join(' · ');
+
 class _SeccionTitulo extends StatelessWidget {
   final String titulo;
-  const _SeccionTitulo({required this.titulo});
+  final IconData icono;
+  const _SeccionTitulo({required this.titulo, required this.icono});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 24, bottom: 10),
-      child: Text(titulo,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFA03333))),
+      padding: const EdgeInsets.only(top: 28, bottom: 12),
+      child: Row(
+        children: [
+          Icon(icono, color: Colores.bordo, size: 22),
+          const SizedBox(width: 8),
+          Text(titulo,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colores.bordo)),
+        ],
+      ),
     );
   }
 }
@@ -547,12 +566,7 @@ class _CampoTexto extends StatelessWidget {
       textCapitalization: TextCapitalization.words,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icono, color: const Color(0xFFA03333)),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFF9183E), width: 2),
-        ),
+        prefixIcon: Icon(icono),
       ),
       validator: obligatorio
           ? (v) => (v == null || v.trim().isEmpty) ? 'Este campo es obligatorio' : null
@@ -575,17 +589,73 @@ class _Campo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Margen arriba y abajo: la etiqueta flotante sube sobre el borde y necesita lugar
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: TextField(
         controller: ctrl,
         keyboardType: teclado,
         textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(labelText: label),
+      ),
+    );
+  }
+}
+
+/// Campo de fecha para los diálogos: solo acepta números y arma solo el formato dd/mm/aaaa.
+/// Es opcional, pero si se completa tiene que ser una fecha real y no futura.
+class _CampoFecha extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String label;
+
+  const _CampoFecha({required this.ctrl, required this.label});
+
+  static String? _validar(String? valor) {
+    final texto = valor?.trim() ?? '';
+    if (texto.isEmpty) return null;
+    final partes = texto.split('/');
+    if (partes.length != 3 || partes[2].length != 4) return 'Completá la fecha: dd/mm/aaaa';
+    final d = int.parse(partes[0]), m = int.parse(partes[1]), a = int.parse(partes[2]);
+    final fecha = DateTime(a, m, d);
+    // DateTime corrige fechas imposibles (ej: 31/02 pasa a marzo), así se detectan
+    if (fecha.day != d || fecha.month != m || a < 1900) return 'Fecha inválida';
+    if (fecha.isAfter(DateTime.now())) return 'La fecha no puede ser futura';
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: TextFormField(
+        controller: ctrl,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly, _FormatoFecha()],
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          hintText: 'dd/mm/aaaa',
+          suffixIcon: const Icon(Icons.calendar_today_outlined),
         ),
+        validator: _validar,
       ),
+    );
+  }
+}
+
+/// Inserta las barras mientras se escribe: "20012021" se ve como "20/01/2021".
+class _FormatoFecha extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue anterior, TextEditingValue nuevo) {
+    final digitos = nuevo.text.length > 8 ? nuevo.text.substring(0, 8) : nuevo.text;
+    final buffer = StringBuffer();
+    for (var i = 0; i < digitos.length; i++) {
+      if (i == 2 || i == 4) buffer.write('/');
+      buffer.write(digitos[i]);
+    }
+    final texto = buffer.toString();
+    return TextEditingValue(
+      text: texto,
+      selection: TextSelection.collapsed(offset: texto.length),
     );
   }
 }
@@ -604,10 +674,9 @@ class _TarjetaItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: const Color(0xFFA03333),
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: ListTile(
+        contentPadding: const EdgeInsets.only(left: 16, right: 4),
         title: Text(titulo,
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         subtitle: subtitulo.isEmpty
@@ -615,7 +684,8 @@ class _TarjetaItem extends StatelessWidget {
             : Text(subtitulo,
                 style: const TextStyle(color: Colors.white70, fontStyle: FontStyle.italic)),
         trailing: IconButton(
-          icon: const Icon(Icons.delete, color: Colors.white70),
+          icon: const Icon(Icons.delete_outline, color: Colors.white70),
+          tooltip: 'Eliminar',
           onPressed: onEliminar,
         ),
       ),
@@ -633,9 +703,14 @@ class _BotonAgregar extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: onTap,
-      icon: const Icon(Icons.add, color: Color(0xFFA03333)),
-      label: Text(texto, style: const TextStyle(color: Color(0xFFA03333))),
-      style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFA03333))),
+      icon: const Icon(Icons.add_rounded),
+      label: Text(texto),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colores.bordo,
+        side: const BorderSide(color: Colores.bordo),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
     );
   }
 }

@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 import '../models/perfil_medico.dart';
 import '../services/auth_service.dart';
-import '../widgets/curved_header.dart';
+import '../theme/colores.dart';
+import '../widgets/encabezado.dart';
 import 'pantalla_editar_perfil.dart';
+
+/// Secciones del perfil, en el mismo orden en la grilla de la pantalla principal y en el carrusel.
+class Categoria {
+  final String titulo;
+  final IconData icono;
+  const Categoria(this.titulo, this.icono);
+}
+
+const categorias = [
+  Categoria('Enfermedades', Icons.monitor_heart_outlined),
+  Categoria('Alergias', Icons.warning_amber_rounded),
+  Categoria('Contactos', Icons.contact_phone_outlined),
+  Categoria('Vacunas', Icons.vaccines_outlined),
+  Categoria('Obra Social', Icons.badge_outlined),
+  Categoria('Medicación', Icons.medication_outlined),
+  Categoria('Restricciones', Icons.no_food_outlined),
+];
 
 class PantallaCategoriaCarousel extends StatefulWidget {
   final PerfilMedico perfil;
@@ -23,15 +41,6 @@ class _PantallaCategoriaCarouselState extends State<PantallaCategoriaCarousel> {
   late int _paginaActual;
   late PerfilMedico _perfil;
 
-  static const _titulos = [
-    'Enfermedades',
-    'Alergias',
-    'Número de Respaldo',
-    'Vacunas',
-    'Obra Social',
-    'Medicación',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -48,7 +57,7 @@ class _PantallaCategoriaCarouselState extends State<PantallaCategoriaCarousel> {
 
   Future<void> _irAEditar() async {
     final autenticado = await AuthService.pedirAutenticacion();
-    if (!autenticado || !context.mounted) return;
+    if (!autenticado || !mounted) return;
     final actualizado = await Navigator.push<PerfilMedico>(
       context,
       MaterialPageRoute(builder: (_) => PantallaEditarPerfil(perfilActual: _perfil)),
@@ -56,83 +65,47 @@ class _PantallaCategoriaCarouselState extends State<PantallaCategoriaCarousel> {
     if (actualizado != null) setState(() => _perfil = actualizado);
   }
 
+  void _irAPagina(int i) => _ctrl.animateToPage(i,
+      duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Header curvo
-          CurvedHeader(
-            height: 150,
-            child: Stack(
-              children: [
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 44),
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFA03333),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      child: Text(
-                        _titulos[_paginaActual],
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 4,
-                  child: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white),
-                    onPressed: _irAEditar,
-                  ),
-                ),
-              ],
+    return PopScope<PerfilMedico>(
+      // Al volver con el botón de atrás también se devuelve el perfil actualizado
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.pop(context, _perfil);
+      },
+      child: Scaffold(
+        body: Column(
+          children: [
+            Encabezado(titulo: categorias[_paginaActual].titulo, onEditar: _irAEditar),
+            Expanded(
+              child: PageView(
+                controller: _ctrl,
+                onPageChanged: (i) => setState(() => _paginaActual = i),
+                children: [
+                  _PaginaEnfermedades(perfil: _perfil),
+                  _PaginaAlergias(perfil: _perfil),
+                  _PaginaContactos(perfil: _perfil),
+                  _PaginaVacunas(perfil: _perfil),
+                  _PaginaObraSocial(perfil: _perfil),
+                  _PaginaMedicacion(perfil: _perfil),
+                  _PaginaRestricciones(perfil: _perfil),
+                ],
+              ),
             ),
-          ),
-
-          // Contenido con PageView
-          Expanded(
-            child: PageView(
-              controller: _ctrl,
-              onPageChanged: (i) => setState(() => _paginaActual = i),
-              children: [
-                _PaginaEnfermedades(perfil: _perfil),
-                _PaginaAlergias(perfil: _perfil),
-                _PaginaContactos(perfil: _perfil),
-                _PaginaVacunas(perfil: _perfil),
-                _PaginaObraSocial(perfil: _perfil),
-                _PaginaMedicacion(perfil: _perfil),
-              ],
+            _BottomNav(
+              paginaActual: _paginaActual,
+              total: categorias.length,
+              onAnterior: _paginaActual > 0 ? () => _irAPagina(_paginaActual - 1) : null,
+              onSiguiente: _paginaActual < categorias.length - 1
+                  ? () => _irAPagina(_paginaActual + 1)
+                  : null,
+              onInicio: () => Navigator.pop(context, _perfil),
             ),
-          ),
-
-          // Navegación inferior
-          _BottomNav(
-            paginaActual: _paginaActual,
-            total: _titulos.length,
-            onAnterior: _paginaActual > 0
-                ? () => _ctrl.previousPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut)
-                : null,
-            onSiguiente: _paginaActual < _titulos.length - 1
-                ? () => _ctrl.nextPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut)
-                : null,
-            onInicio: () => Navigator.pop(context, _perfil),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -159,61 +132,51 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.only(bottom: 24, top: 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _BotonFlecha(
-                icono: Icons.chevron_left,
-                activo: onAnterior != null,
-                onTap: onAnterior,
-              ),
-              GestureDetector(
-                onTap: onInicio,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFA03333),
-                    borderRadius: BorderRadius.circular(24),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 16, top: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _BotonFlecha(icono: Icons.chevron_left, onTap: onAnterior),
+                FilledButton.icon(
+                  onPressed: onInicio,
+                  icon: const Icon(Icons.home_rounded),
+                  label: const Text('Inicio'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colores.bordo,
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  child: const Text('Inicio',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
                 ),
-              ),
-              _BotonFlecha(
-                icono: Icons.chevron_right,
-                activo: onSiguiente != null,
-                onTap: onSiguiente,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              total,
-              (i) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: i == paginaActual ? 10 : 8,
-                height: i == paginaActual ? 10 : 8,
-                decoration: BoxDecoration(
-                  color: i == paginaActual
-                      ? const Color(0xFFA03333)
-                      : Colors.grey.shade400,
-                  shape: BoxShape.circle,
+                _BotonFlecha(icono: Icons.chevron_right, onTap: onSiguiente),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // Indicador de página: el punto actual se estira como una píldora
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                total,
+                (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: i == paginaActual ? 22 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: i == paginaActual ? Colores.bordo : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -221,23 +184,21 @@ class _BottomNav extends StatelessWidget {
 
 class _BotonFlecha extends StatelessWidget {
   final IconData icono;
-  final bool activo;
   final VoidCallback? onTap;
 
-  const _BotonFlecha({required this.icono, required this.activo, this.onTap});
+  const _BotonFlecha({required this.icono, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: activo ? const Color(0xFFA03333) : Colors.grey.shade300,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icono, color: Colors.white, size: 28),
+    return IconButton.filled(
+      onPressed: onTap,
+      icon: Icon(icono, size: 28),
+      style: IconButton.styleFrom(
+        backgroundColor: Colores.bordo,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: Colors.grey.shade300,
+        disabledForegroundColor: Colors.white,
+        minimumSize: const Size(48, 48),
       ),
     );
   }
@@ -249,36 +210,134 @@ class _BotonFlecha extends StatelessWidget {
 
 class _SinDatos extends StatelessWidget {
   final String mensaje;
-  const _SinDatos({required this.mensaje});
+  final IconData icono;
+  const _SinDatos({required this.mensaje, required this.icono});
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Text(mensaje,
-            style: const TextStyle(fontSize: 16, color: Colors.grey)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icono, size: 56, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text(mensaje, style: const TextStyle(fontSize: 16, color: Colores.textoSuave)),
+          ],
+        ),
       );
 }
 
-Widget _filaRichText(String label, String valor) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 4),
-    child: RichText(
-      textAlign: TextAlign.center,
-      text: TextSpan(children: [
-        TextSpan(
-          text: '$label: ',
-          style: const TextStyle(
-              color: Colors.white60,
-              fontStyle: FontStyle.italic,
-              fontSize: 13),
+/// Tarjeta de un elemento del perfil: ícono, título, etiqueta opcional y filas "dato: valor".
+/// Las filas con valor vacío no se muestran.
+class _Tarjeta extends StatelessWidget {
+  final IconData icono;
+  final String titulo;
+  final String? etiqueta;
+  final List<(String, String)> filas;
+  final Color color;
+
+  const _Tarjeta({
+    required this.icono,
+    required this.titulo,
+    this.etiqueta,
+    this.filas = const [],
+    this.color = Colores.bordo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final visibles = filas.where((f) => f.$2.isNotEmpty);
+    return Card(
+      color: color,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: visibles.isEmpty ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: Colors.white24,
+              child: Icon(icono, color: Colors.white),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(titulo,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      ),
+                      if (etiqueta != null && etiqueta!.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                              color: Colors.white24, borderRadius: BorderRadius.circular(12)),
+                          child: Text(etiqueta!,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ],
+                  ),
+                  for (final (label, valor) in visibles)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text.rich(TextSpan(children: [
+                        TextSpan(
+                          text: '$label: ',
+                          style: const TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                        TextSpan(
+                          text: valor,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                        ),
+                      ])),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
-        TextSpan(
-          text: valor,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-      ]),
-    ),
-  );
+      ),
+    );
+  }
+}
+
+/// Lista de tarjetas que se construyen a medida que se ven en pantalla.
+class _Lista<T> extends StatelessWidget {
+  final List<T> items;
+  final _Tarjeta Function(T) tarjeta;
+  final String vacio;
+  final IconData icono;
+
+  const _Lista({
+    required this.items,
+    required this.tarjeta,
+    required this.vacio,
+    required this.icono,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return _SinDatos(mensaje: vacio, icono: icono);
+    // Con muchos elementos aparece una barra lateral que se puede arrastrar para recorrerlos rápido
+    return Scrollbar(
+      interactive: true,
+      radius: const Radius.circular(4),
+      thickness: 6,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        itemBuilder: (_, i) => tarjeta(items[i]),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -290,113 +349,35 @@ class _PaginaEnfermedades extends StatelessWidget {
   const _PaginaEnfermedades({required this.perfil});
 
   @override
-  Widget build(BuildContext context) {
-    if (perfil.enfermedades.isEmpty) {
-      return const _SinDatos(mensaje: 'No se registraron enfermedades.');
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: perfil.enfermedades.length,
-      itemBuilder: (_, i) {
-        final e = perfil.enfermedades[i];
-        return Card(
-          color: const Color(0xFFA03333),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(e.nombre,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                if (e.fechaDiagnostico.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  _filaRichText('Diagnóstico', e.fechaDiagnostico),
-                ],
-                if (e.tratamiento.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  _filaRichText('Tratamiento', e.tratamiento),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => _Lista<Enfermedad>(
+        items: perfil.enfermedades,
+        vacio: 'No se registraron enfermedades.',
+        icono: categorias[0].icono,
+        tarjeta: (e) => _Tarjeta(
+          icono: categorias[0].icono,
+          titulo: e.nombre,
+          filas: [('Diagnóstico', e.fechaDiagnostico), ('Tratamiento', e.tratamiento)],
+        ),
+      );
 }
 
 class _PaginaAlergias extends StatelessWidget {
   final PerfilMedico perfil;
   const _PaginaAlergias({required this.perfil});
 
-  Color _colorSeveridad(String sev) {
-    switch (sev) {
-      case 'Grave':
-        return Colors.red.shade900;
-      case 'Moderada':
-        return Colors.orange.shade900;
-      default:
-        return const Color(0xFFA03333);
-    }
-  }
-
   @override
-  Widget build(BuildContext context) {
-    if (perfil.alergias.isEmpty) {
-      return const _SinDatos(mensaje: 'No se registraron alergias.');
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: perfil.alergias.length,
-      itemBuilder: (_, i) {
-        final a = perfil.alergias[i];
-        return Card(
-          color: _colorSeveridad(a.severidad),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(a.nombre,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(8)),
-                      child: Text(a.severidad,
-                          style: const TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                  ],
-                ),
-                if (a.reaccion.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  _filaRichText('Reacción', a.reaccion),
-                ],
-                if (a.queHacer.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  _filaRichText('Qué hacer', a.queHacer),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => _Lista<Alergia>(
+        items: perfil.alergias,
+        vacio: 'No se registraron alergias.',
+        icono: categorias[1].icono,
+        tarjeta: (a) => _Tarjeta(
+          icono: categorias[1].icono,
+          titulo: a.nombre,
+          etiqueta: a.severidad,
+          color: Colores.severidad(a.severidad),
+          filas: [('Reacción', a.reaccion), ('Qué hacer', a.queHacer)],
+        ),
+      );
 }
 
 class _PaginaContactos extends StatelessWidget {
@@ -404,45 +385,17 @@ class _PaginaContactos extends StatelessWidget {
   const _PaginaContactos({required this.perfil});
 
   @override
-  Widget build(BuildContext context) {
-    if (perfil.contactos.isEmpty) {
-      return const _SinDatos(mensaje: 'No se registraron contactos de emergencia.');
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: perfil.contactos.length,
-      itemBuilder: (_, i) {
-        final c = perfil.contactos[i];
-        return Card(
-          color: const Color(0xFFA03333),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(c.nombre,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(c.relacion,
-                    style: const TextStyle(
-                        color: Colors.white70,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 14)),
-                const SizedBox(height: 4),
-                Text(c.telefono,
-                    style: const TextStyle(color: Colors.white, fontSize: 16)),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => _Lista<ContactoEmergencia>(
+        items: perfil.contactos,
+        vacio: 'No se registraron contactos de emergencia.',
+        icono: categorias[2].icono,
+        tarjeta: (c) => _Tarjeta(
+          icono: Icons.person_outline,
+          titulo: c.nombre,
+          etiqueta: c.relacion,
+          filas: [('Teléfono', c.telefono)],
+        ),
+      );
 }
 
 class _PaginaVacunas extends StatelessWidget {
@@ -450,48 +403,17 @@ class _PaginaVacunas extends StatelessWidget {
   const _PaginaVacunas({required this.perfil});
 
   @override
-  Widget build(BuildContext context) {
-    if (perfil.vacunas.isEmpty) {
-      return const _SinDatos(mensaje: 'No se registraron vacunas.');
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: perfil.vacunas.length,
-      itemBuilder: (_, i) {
-        final v = perfil.vacunas[i];
-        return Card(
-          color: const Color(0xFFA03333),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(v.nombre,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                if (v.dosis.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  _filaRichText(v.dosis, v.marca.isEmpty ? '—' : v.marca),
-                ],
-                if (v.fecha.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  _filaRichText('Fecha', v.fecha),
-                ],
-                if (v.localidad.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  _filaRichText('Localidad', v.localidad),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => _Lista<Vacuna>(
+        items: perfil.vacunas,
+        vacio: 'No se registraron vacunas.',
+        icono: categorias[3].icono,
+        tarjeta: (v) => _Tarjeta(
+          icono: categorias[3].icono,
+          titulo: v.nombre,
+          etiqueta: v.dosis,
+          filas: [('Marca', v.marca), ('Fecha', v.fecha), ('Localidad', v.localidad)],
+        ),
+      );
 }
 
 class _PaginaObraSocial extends StatelessWidget {
@@ -500,54 +422,18 @@ class _PaginaObraSocial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    if (perfil.obraSocial.isEmpty && perfil.numeroSocio.isEmpty) {
+      return _SinDatos(mensaje: 'No se registró obra social.', icono: categorias[4].icono);
+    }
+    return ListView(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _TarjetaDato(
-            label: 'Obra Social',
-            valor: perfil.obraSocial.isEmpty ? 'No registrada' : perfil.obraSocial,
-          ),
-          const SizedBox(height: 12),
-          _TarjetaDato(
-            label: 'Número de socio',
-            valor: perfil.numeroSocio.isEmpty ? 'No registrado' : perfil.numeroSocio,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TarjetaDato extends StatelessWidget {
-  final String label;
-  final String valor;
-  const _TarjetaDato({required this.label, required this.valor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: const Color(0xFFA03333),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(label,
-                style: const TextStyle(
-                    color: Colors.white60,
-                    fontStyle: FontStyle.italic,
-                    fontSize: 13)),
-            const SizedBox(height: 6),
-            Text(valor,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-          ],
+      children: [
+        _Tarjeta(
+          icono: categorias[4].icono,
+          titulo: perfil.obraSocial.isEmpty ? 'Obra social no registrada' : perfil.obraSocial,
+          filas: [('Número de socio', perfil.numeroSocio)],
         ),
-      ),
+      ],
     );
   }
 }
@@ -557,55 +443,33 @@ class _PaginaMedicacion extends StatelessWidget {
   const _PaginaMedicacion({required this.perfil});
 
   @override
-  Widget build(BuildContext context) {
-    if (perfil.medicacion.isEmpty) {
-      return const _SinDatos(mensaje: 'No se registró medicación.');
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: perfil.medicacion.length,
-      itemBuilder: (_, i) {
-        final m = perfil.medicacion[i];
-        return Card(
-          color: const Color(0xFFA03333),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Text(m.nombre,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-                if (m.dosis.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(m.dosis,
-                      style: const TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15)),
-                ],
-                if (m.marca.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(m.marca,
-                      style: const TextStyle(
-                          color: Colors.white54,
-                          fontStyle: FontStyle.italic,
-                          fontSize: 13)),
-                ],
-                if (m.frecuencia.isNotEmpty || m.via.isNotEmpty || m.indicacion.isNotEmpty)
-                  const Divider(color: Colors.white24, height: 16),
-                if (m.frecuencia.isNotEmpty) _filaRichText('Frecuencia', m.frecuencia),
-                if (m.via.isNotEmpty) _filaRichText('Vía', m.via),
-                if (m.indicacion.isNotEmpty) _filaRichText('Para qué', m.indicacion),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => _Lista<Medicamento>(
+        items: perfil.medicacion,
+        vacio: 'No se registró medicación.',
+        icono: categorias[5].icono,
+        tarjeta: (m) => _Tarjeta(
+          icono: categorias[5].icono,
+          titulo: m.nombre,
+          etiqueta: m.dosis,
+          filas: [
+            ('Marca', m.marca),
+            ('Frecuencia', m.frecuencia),
+            ('Vía', m.via),
+            ('Para qué', m.indicacion),
+          ],
+        ),
+      );
+}
+
+class _PaginaRestricciones extends StatelessWidget {
+  final PerfilMedico perfil;
+  const _PaginaRestricciones({required this.perfil});
+
+  @override
+  Widget build(BuildContext context) => _Lista<String>(
+        items: perfil.restriccionesAlimentarias,
+        vacio: 'No se registraron restricciones alimentarias.',
+        icono: categorias[6].icono,
+        tarjeta: (r) => _Tarjeta(icono: categorias[6].icono, titulo: r),
+      );
 }

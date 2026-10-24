@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.emergency_system"
+    namespace = "ar.edu.unrn.emergencysystem"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         // Tu ID único de aplicación
-        applicationId = "com.example.emergency_system"
+        applicationId = "ar.edu.unrn.emergencysystem"
         // Forzamos el SDK mínimo a 21
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
@@ -46,4 +46,6 @@ flutter {
 dependencies {
     // Agregamos la librería específica para que funcionen las notificaciones en Android viejo
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Temas AppCompat que necesita local_auth en Android 8 o anterior
+    implementation("androidx.appcompat:appcompat:1.7.0")
 }

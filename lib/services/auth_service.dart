@@ -3,37 +3,34 @@ import 'package:local_auth/local_auth.dart';
 
 class AuthService {
   static final _auth = LocalAuthentication();
+  static const _dispositivo = MethodChannel('emergency_system/dispositivo');
 
-  /// Pide autenticación biométrica o PIN al usuario.
+  /// Pide autenticación antes de permitir editar el perfil médico.
+  /// - Si el teléfono está bloqueado (la app se abrió sobre la pantalla de bloqueo),
+  ///   pide desbloquear el dispositivo con su PIN, patrón o contraseña.
+  /// - Si está desbloqueado, pide huella o, en su defecto, el PIN/contraseña del dispositivo.
+  /// - Si el dispositivo no tiene ningún bloqueo configurado, permite editar,
+  ///   ya que cualquiera que tenga el teléfono podría desbloquearlo igual.
   /// Devuelve true si se autenticó correctamente, false si canceló o falló.
   static Future<bool> pedirAutenticacion() async {
-  try {
-    final disponible = await _auth.canCheckBiometrics;
-    final soportado = await _auth.isDeviceSupported();
+    try {
+      final bloqueado = await _dispositivo.invokeMethod<bool>('estaBloqueado') ?? false;
+      if (bloqueado) {
+        return await _dispositivo.invokeMethod<bool>('pedirDesbloqueo') ?? false;
+      }
 
-    // Agregamos estos prints para ver qué devuelve
-    print('canCheckBiometrics: $disponible');
-    print('isDeviceSupported: $soportado');
+      final tieneBloqueo = await _dispositivo.invokeMethod<bool>('tieneBloqueoSeguro') ?? false;
+      if (!tieneBloqueo) return true;
 
-    if (!disponible && !soportado) {
-      print('Dispositivo no soportado, retornando false');
+      return await _auth.authenticate(
+        localizedReason: 'Autenticáte para editar tu perfil médico',
+        options: const AuthenticationOptions(
+          biometricOnly: false,
+          stickyAuth: true,
+        ),
+      );
+    } on PlatformException {
       return false;
     }
-
-    final resultado = await _auth.authenticate(
-      localizedReason: 'Autenticáte para editar tu perfil médico',
-      options: const AuthenticationOptions(
-        biometricOnly: false,
-        stickyAuth: true,
-      ),
-    );
-
-    print('Resultado autenticación: $resultado');
-    return resultado;
-
-  } on PlatformException catch (e) {
-    print('PlatformException: ${e.code} - ${e.message}');
-    return false;
   }
-}
 }
