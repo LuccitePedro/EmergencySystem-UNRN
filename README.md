@@ -9,11 +9,12 @@ y nadie sabía a quién contactar ni qué condiciones médicas tenía.
 ## Índice
 
 - [Descripción](#descripción)
+- [Descargar la app](#descargar-la-app)
 - [Características](#características)
 - [Pantallas de la aplicación](#pantallas-de-la-aplicación)
 - [Seguridad y privacidad](#seguridad-y-privacidad)
 - [Tecnologías utilizadas](#tecnologías-utilizadas)
-- [Instalación](#instalación)
+- [Instalación para desarrolladores](#instalación-para-desarrolladores)
 - [Modo de uso](#modo-de-uso)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Pruebas](#pruebas)
@@ -35,6 +36,32 @@ permanente, pero **solo el dueño puede modificarla**.
 
 Los datos se almacenan **cifrados y localmente en el dispositivo**, sin servidores externos ni conexión a
 internet.
+
+---
+
+## Descargar la app
+
+La app no se publica en la Play Store: se instala directamente con el archivo **APK**, que se descarga
+desde la sección **Releases** de este repositorio.
+
+**[⬇ Descargar la última versión](https://github.com/LuccitePedro/EmergencySystem-UNRN/releases/latest)**
+
+### Cómo instalarla
+1. Desde el celular Android, abrí el enlace de arriba y tocá el archivo `EmergencySystem-vX.X.X.apk`
+   para descargarlo.
+2. Cuando termine, abrí el archivo descargado.
+3. Si aparece el aviso de que no se permiten apps de origen desconocido, tocá **Configuración**, activá
+   **Permitir de esta fuente** y volvé atrás.
+4. Tocá **Instalar**. Si Google Play Protect muestra un aviso, elegí **Más detalles → Instalar de todas
+   formas**. Aparece porque la app no viene de la Play Store.
+5. Abrí la app y **aceptá el permiso de notificaciones**, para que tus datos se vean aunque el teléfono
+   esté bloqueado.
+
+### Cómo actualizarla
+Descargá el APK de la versión nueva desde Releases e instalalo encima de la anterior. **Tus datos se
+conservan**; no hace falta desinstalar.
+
+> Requiere Android 7.0 o superior. No está disponible para iPhone.
 
 ---
 
@@ -135,7 +162,10 @@ bloqueado y pedir que se desbloquee antes de editar.
 
 ---
 
-## Instalación
+## Instalación para desarrolladores
+
+Para modificar o compilar la app desde el código. Si solo querés usarla, mirá
+[Descargar la app](#descargar-la-app).
 
 ### Requisitos previos
 
@@ -190,7 +220,15 @@ que la PC):
    ```
 3. Verificar con `flutter devices` y correr la app normalmente.
 
-> **Nota:** en un futuro se publicará en la Play Store de Android. Por el momento no hay versión para iOS.
+### Publicar una versión nueva
+1. Subir el número de versión en `pubspec.yaml` (por ejemplo `version: 1.0.1+2`).
+2. Generar el APK con `flutter build apk --release`.
+3. En GitHub: **Releases → Draft a new release**, crear la etiqueta (por ejemplo `v1.0.1`), adjuntar el
+   APK renombrado como `EmergencySystem-v1.0.1.apk` y publicar.
+
+> **Importante:** el APK queda firmado con la clave de la PC donde se compila. Para que los usuarios
+> puedan instalar la actualización encima de la versión anterior (y conservar sus datos), todas las
+> versiones tienen que compilarse en la misma PC, o con la misma clave de firma.
 
 ---
 
@@ -289,8 +327,10 @@ implementadas y probadas en un dispositivo real.
 
 Pendiente para futuras versiones:
 - Verificar las llamadas en un teléfono con línea
-- Lanzamiento en Play Store
-- Versión para iOS y posible lanzamiento en App Store
+- Versión para iOS
+
+La app se distribuye únicamente mediante el APK de [Releases](https://github.com/LuccitePedro/EmergencySystem-UNRN/releases);
+no está prevista su publicación en la Play Store.
 
 ---
 
