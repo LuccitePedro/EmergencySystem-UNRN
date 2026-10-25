@@ -3,6 +3,7 @@
 //  MODELOS DE DETALLE
 // ─────────────────────────────────────────────
 
+/// Vacuna aplicada: nombre, dosis, marca, fecha (dd/mm/aaaa) y lugar de aplicación.
 class Vacuna {
   final String nombre;
   final String dosis;
@@ -35,6 +36,7 @@ class Vacuna {
       );
 }
 
+/// Medicamento que toma el usuario, con dosis, frecuencia, vía y para qué es.
 class Medicamento {
   final String nombre;
   final String dosis;
@@ -71,6 +73,7 @@ class Medicamento {
       );
 }
 
+/// Enfermedad o condición crónica, con su tratamiento y fecha de diagnóstico.
 class Enfermedad {
   final String nombre;
   final String tratamiento;
@@ -95,6 +98,7 @@ class Enfermedad {
       );
 }
 
+/// Alergia con su reacción, severidad (Leve, Moderada o Grave) y qué hacer ante una reacción.
 class Alergia {
   final String nombre;
   final String reaccion;
@@ -123,6 +127,7 @@ class Alergia {
       );
 }
 
+/// Persona a la que llamar en una emergencia.
 class ContactoEmergencia {
   final String nombre;
   final String relacion;
@@ -152,6 +157,8 @@ class ContactoEmergencia {
 //  PERFIL MÉDICO PRINCIPAL
 // ─────────────────────────────────────────────
 
+/// Perfil médico completo del usuario. Es inmutable: para cambiar un dato se crea una copia con [copyWith].
+/// Se guarda como JSON (ver [toJson] y [PerfilMedico.fromJson]).
 class PerfilMedico {
   final String nombre;
   final String grupoSanguineo;
@@ -177,6 +184,7 @@ class PerfilMedico {
     required this.contactos,
   });
 
+  /// Perfil sin datos, usado en el primer uso o si no se pudo leer el guardado.
   static const PerfilMedico vacio = PerfilMedico(
     nombre: '',
     grupoSanguineo: '',
@@ -190,6 +198,7 @@ class PerfilMedico {
     contactos: [],
   );
 
+  /// Indica si todavía no se cargó el perfil (el nombre es el único dato obligatorio).
   bool get estaVacio => nombre.isEmpty;
 
   Map<String, dynamic> toJson() => {
@@ -205,6 +214,8 @@ class PerfilMedico {
         'contactos': contactos.map((c) => c.toJson()).toList(),
       };
 
+  /// Reconstruye el perfil desde JSON. Los campos que falten quedan vacíos, así un perfil
+  /// guardado con una versión anterior de la app se sigue pudiendo leer.
   factory PerfilMedico.fromJson(Map<String, dynamic> json) => PerfilMedico(
         nombre: json['nombre'] ?? '',
         grupoSanguineo: json['grupoSanguineo'] ?? '',
@@ -229,6 +240,7 @@ class PerfilMedico {
             .toList(),
       );
 
+  /// Devuelve una copia del perfil cambiando solo los campos indicados.
   PerfilMedico copyWith({
     String? nombre,
     String? grupoSanguineo,

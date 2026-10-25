@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
+/// Protege la edición del perfil. Usa local_auth para huella/PIN y un canal nativo
+/// (MainActivity.kt) para saber si el dispositivo está bloqueado y pedir que se desbloquee.
 class AuthService {
   static final _auth = LocalAuthentication();
   static const _dispositivo = MethodChannel('emergency_system/dispositivo');

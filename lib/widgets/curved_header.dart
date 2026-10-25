@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/colores.dart';
 
+/// Fondo rojo del encabezado con el borde inferior curvo.
 class CurvedHeader extends StatelessWidget {
   final Widget child;
   final double height;
@@ -25,6 +26,7 @@ class CurvedHeader extends StatelessWidget {
   }
 }
 
+/// Recorta el rectángulo del encabezado con una curva en la parte de abajo.
 class _CurvedClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

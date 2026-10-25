@@ -14,6 +14,7 @@ class Colores {
   static const moderada = Color(0xFFE65100);
   static const grave = Color(0xFFB71C1C);
 
+  /// Color de la tarjeta de una alergia según su severidad.
   static Color severidad(String sev) {
     switch (sev) {
       case 'Grave':

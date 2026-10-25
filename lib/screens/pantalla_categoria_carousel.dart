@@ -22,6 +22,8 @@ const categorias = [
   Categoria('Restricciones', Icons.no_food_outlined),
 ];
 
+/// Muestra el detalle de las secciones del perfil en un carrusel: se pasa de una a otra
+/// deslizando o con las flechas. Al salir devuelve el perfil (actualizado si se editó).
 class PantallaCategoriaCarousel extends StatefulWidget {
   final PerfilMedico perfil;
   final int indiceInicial;
@@ -55,6 +57,7 @@ class _PantallaCategoriaCarouselState extends State<PantallaCategoriaCarousel> {
     super.dispose();
   }
 
+  /// Pide autenticación y abre el formulario de edición; al volver muestra los datos nuevos.
   Future<void> _irAEditar() async {
     final autenticado = await AuthService.pedirAutenticacion();
     if (!autenticado || !mounted) return;
@@ -65,6 +68,7 @@ class _PantallaCategoriaCarouselState extends State<PantallaCategoriaCarousel> {
     if (actualizado != null) setState(() => _perfil = actualizado);
   }
 
+  /// Desliza el carrusel hasta la página [i] con una animación.
   void _irAPagina(int i) => _ctrl.animateToPage(i,
       duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
 
@@ -115,6 +119,7 @@ class _PantallaCategoriaCarouselState extends State<PantallaCategoriaCarousel> {
 //  NAVEGACIÓN INFERIOR
 // ─────────────────────────────────────────────
 
+/// Barra inferior del carrusel: flechas anterior/siguiente, botón Inicio e indicador de página.
 class _BottomNav extends StatelessWidget {
   final int paginaActual;
   final int total;
@@ -182,6 +187,7 @@ class _BottomNav extends StatelessWidget {
   }
 }
 
+/// Flecha circular; se muestra gris y desactivada si [onTap] es null.
 class _BotonFlecha extends StatelessWidget {
   final IconData icono;
   final VoidCallback? onTap;
@@ -208,6 +214,7 @@ class _BotonFlecha extends StatelessWidget {
 //  WIDGETS COMPARTIDOS DE CONTENIDO
 // ─────────────────────────────────────────────
 
+/// Mensaje con ícono que se muestra cuando una sección no tiene datos.
 class _SinDatos extends StatelessWidget {
   final String mensaje;
   final IconData icono;
@@ -416,6 +423,7 @@ class _PaginaVacunas extends StatelessWidget {
       );
 }
 
+/// Página de obra social: una sola tarjeta con el nombre y el número de socio.
 class _PaginaObraSocial extends StatelessWidget {
   final PerfilMedico perfil;
   const _PaginaObraSocial({required this.perfil});

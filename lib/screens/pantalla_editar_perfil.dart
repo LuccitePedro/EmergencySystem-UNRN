@@ -166,7 +166,8 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
  * Se encarga de mostrar un diálogo para agregar una nueva enfermedad.
  * Incluye campos para nombre, tratamiento actual y fecha de diagnóstico.
  * Return: Agrega la Enfermedad a la lista interna si el usuario confirmó.
- */  Future<void> _agregarEnfermedad() async {
+ */
+  Future<void> _agregarEnfermedad() async {
     final nombreCtrl = TextEditingController();
     final tratamientoCtrl = TextEditingController();
     final fechaCtrl = TextEditingController();
@@ -525,6 +526,9 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
 // Une los datos con " · " salteando los vacíos (evita subtítulos como "Leve · ")
 String _unir(List<String> partes) => partes.where((p) => p.isNotEmpty).join(' · ');
 
+/**
+ * Título de cada sección del formulario, con su ícono.
+ */
 class _SeccionTitulo extends StatelessWidget {
   final String titulo;
   final IconData icono;
@@ -546,6 +550,9 @@ class _SeccionTitulo extends StatelessWidget {
   }
 }
 
+/**
+ * Campo de texto del formulario principal; si es [obligatorio], no deja guardar vacío.
+ */
 class _CampoTexto extends StatelessWidget {
   final TextEditingController controlador;
   final String label;
@@ -610,6 +617,10 @@ class _CampoFecha extends StatelessWidget {
 
   const _CampoFecha({required this.ctrl, required this.label});
 
+  /**
+   * Valida la fecha escrita: vacía es válida (el campo es opcional); si no, debe ser
+   * una fecha completa, existente, posterior a 1900 y no futura. Devuelve el error o null.
+   */
   static String? _validar(String? valor) {
     final texto = valor?.trim() ?? '';
     if (texto.isEmpty) return null;
@@ -660,6 +671,9 @@ class _FormatoFecha extends TextInputFormatter {
   }
 }
 
+/**
+ * Elemento ya cargado en el formulario, con su botón para eliminarlo.
+ */
 class _TarjetaItem extends StatelessWidget {
   final String titulo;
   final String subtitulo;
@@ -693,6 +707,9 @@ class _TarjetaItem extends StatelessWidget {
   }
 }
 
+/**
+ * Botón con borde que abre el diálogo para agregar un elemento a una sección.
+ */
 class _BotonAgregar extends StatelessWidget {
   final String texto;
   final VoidCallback onTap;

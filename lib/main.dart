@@ -11,11 +11,13 @@ import 'utils/texto.dart';
 import 'screens/pantalla_editar_perfil.dart';
 import 'screens/pantalla_categoria_carousel.dart';
 
+/// Punto de entrada de la aplicación.
 void main() {
   // La primera pantalla se dibuja enseguida; permisos y notificación se resuelven después
   runApp(const EmergenciaApp());
 }
 
+/// Widget raíz: aplica el tema de la app y arranca en la pantalla de carga.
 class EmergenciaApp extends StatelessWidget {
   const EmergenciaApp({super.key});
 
@@ -47,6 +49,10 @@ class _PantallaCargaState extends State<PantallaCarga> {
     _decidirRuta();
   }
 
+  /// Carga el perfil guardado y decide a dónde ir:
+  /// - Primer uso: abre el formulario vacío y, al guardarlo, sigue a la pantalla principal.
+  /// - Si ya hay un perfil: va directo a la pantalla principal.
+  /// También muestra (o actualiza) la notificación permanente con los datos vitales.
   Future<void> _decidirRuta() async {
     final esPrimero = await StorageService.esPrimerUso();
     final perfil = await StorageService.cargarPerfil();
@@ -106,6 +112,7 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
     _perfil = widget.perfil;
   }
 
+  /// Muestra un diálogo simple con un título, un mensaje y un botón OK.
   void _avisar(String titulo, String mensaje) {
     showDialog(
       context: context,
@@ -127,6 +134,7 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
+  /// Llama al contacto indicado. Si es null (no hay contactos cargados), avisa que falta registrarlo.
   void _llamarContactoEmergencia(ContactoEmergencia? c) {
     if (c == null) {
       _avisar('Sin contacto', 'No hay ningún contacto de emergencia registrado.');
@@ -135,6 +143,8 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
     _llamar(c.telefono, c.nombre);
   }
 
+  /// Pide autenticación y, si es correcta, abre el formulario de edición.
+  /// Al volver con cambios guardados, actualiza la pantalla con el perfil nuevo.
   Future<void> _irAEditar() async {
     final autenticado = await AuthService.pedirAutenticacion();
     if (!autenticado || !mounted) return;
@@ -145,6 +155,8 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
     if (actualizado != null) setState(() => _perfil = actualizado);
   }
 
+  /// Abre el carrusel de secciones en la categoría [indice] (mismo orden que [categorias]).
+  /// Si desde ahí se editó el perfil, toma la versión actualizada al volver.
   Future<void> _abrirCategoria(int indice) async {
     final actualizado = await Navigator.push<PerfilMedico>(
       context,
@@ -158,6 +170,7 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
     if (actualizado != null) setState(() => _perfil = actualizado);
   }
 
+  /// Devuelve el grupo sanguíneo con su factor escrito, por ejemplo "A+ (positivo)".
   String _grupoConDescripcion(String grupo) {
     if (grupo.isEmpty) return 'No registrado';
     final positivo = grupo.contains('+');
@@ -267,6 +280,7 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
 //  WIDGETS INTERNOS
 // ─────────────────────────────────────────────
 
+/// Fila de la tarjeta vital: ícono, nombre del dato en negrita y su valor.
 class _LineaInfo extends StatelessWidget {
   final IconData icono;
   final String label;
@@ -301,6 +315,7 @@ class _LineaInfo extends StatelessWidget {
   }
 }
 
+/// Botón cuadrado de llamada (911 o contacto) con su nombre debajo.
 class _BotonLlamada extends StatelessWidget {
   final IconData icono;
   final Color colorFondo;
@@ -341,6 +356,7 @@ class _BotonLlamada extends StatelessWidget {
   }
 }
 
+/// Bloque de la grilla que abre una sección del perfil.
 class _BotonCategoria extends StatelessWidget {
   final Categoria categoria;
   final VoidCallback onTap;

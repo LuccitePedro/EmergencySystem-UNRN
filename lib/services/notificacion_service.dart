@@ -3,6 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../models/perfil_medico.dart';
 import '../utils/texto.dart';
 
+/// Maneja la notificación permanente que muestra los datos vitales, incluso en la pantalla de bloqueo.
 class NotificacionService {
   static final FlutterLocalNotificationsPlugin _notificacionesPlugin =
       FlutterLocalNotificationsPlugin();
@@ -10,6 +11,7 @@ class NotificacionService {
   // Se inicializa una sola vez, la primera vez que se muestra la notificación
   static Future<void>? _inicializacion;
 
+  /// Pide el permiso de notificaciones (Android 13+) e inicializa el plugin.
   static Future<void> _inicializar() async {
     // Pedir permiso en Android 13+
     await Permission.notification.request();
@@ -41,6 +43,9 @@ class NotificacionService {
     return lineas.join('\n');
   }
 
+  /// Muestra la notificación con el resumen del [perfil], o la actualiza si ya estaba.
+  /// No se puede descartar deslizando y, al actualizarse, no vuelve a aparecer en pantalla.
+  /// Se llama al abrir la app y cada vez que se guarda el perfil.
   static Future<void> mostrarNotificacionPermanente(PerfilMedico perfil) async {
     await (_inicializacion ??= _inicializar());
 

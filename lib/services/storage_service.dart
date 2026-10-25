@@ -11,11 +11,13 @@ class StorageService {
 
   static const _secure = FlutterSecureStorage();
 
+  /// Guarda el perfil cifrado, reemplazando el anterior.
   static Future<void> guardarPerfil(PerfilMedico perfil) async {
     final json = jsonEncode(perfil.toJson());
     await _secure.write(key: _keyPerfil, value: json);
   }
 
+  /// Lee el perfil guardado. Si no hay ninguno o no se puede leer, devuelve [PerfilMedico.vacio].
   static Future<PerfilMedico> cargarPerfil() async {
     try {
       final json = await _secure.read(key: _keyPerfil);
@@ -26,11 +28,13 @@ class StorageService {
     }
   }
 
+  /// Registra que el usuario ya completó el formulario inicial.
   static Future<void> marcarPrimerUsoCompletado() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyPrimerUso, true);
   }
 
+  /// Indica si la app se abre por primera vez (todavía no se guardó un perfil).
   static Future<bool> esPrimerUso() async {
     final prefs = await SharedPreferences.getInstance();
     return !(prefs.getBool(_keyPrimerUso) ?? false);
