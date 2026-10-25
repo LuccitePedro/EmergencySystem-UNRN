@@ -41,7 +41,7 @@ internet.
 
 ## Descargar la app
 
-La app no se publica en la Play Store: se instala directamente con el archivo **APK**, que se descarga
+Se instala directamente con el archivo **APK**, que se descarga
 desde la sección **Releases** de este repositorio.
 
 **[⬇ Descargar la última versión](https://github.com/LuccitePedro/EmergencySystem-UNRN/releases/latest)**
@@ -330,7 +330,6 @@ Pendiente para futuras versiones:
 - Versión para iOS
 
 La app se distribuye únicamente mediante el APK de [Releases](https://github.com/LuccitePedro/EmergencySystem-UNRN/releases);
-no está prevista su publicación en la Play Store.
 
 ---
 
