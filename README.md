@@ -80,6 +80,10 @@ conservan**; no hace falta desinstalar.
 - **Botón de llamada al 911** con un solo toque.
 - **Hasta dos contactos de emergencia** con su propio botón de llamada. Si no hay ninguno cargado, la app
   avisa al tocar el botón.
+- **Llamadas con el teléfono bloqueado**: al guardar el perfil con algún contacto, la app pide permiso
+  para hacer llamadas. Con ese permiso, los botones de los contactos llaman directo, sin desbloquear el
+  teléfono. Sin el permiso, se abre el marcador y Android pide desbloquear. El 911 siempre abre el
+  marcador, porque Android no permite que una app llame directo a un número de emergencia.
 
 ### Perfil médico completo
 Siete secciones, navegables desde la grilla de la pantalla principal o deslizando de una a otra:

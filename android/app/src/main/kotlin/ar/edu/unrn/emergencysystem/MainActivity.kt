@@ -1,7 +1,11 @@
 package ar.edu.unrn.emergencysystem
 
+import android.Manifest
 import android.app.KeyguardManager
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -50,6 +54,24 @@ class MainActivity: FlutterFragmentActivity() {
                             override fun onDismissCancelled() = result.success(false)
                             override fun onDismissError() = result.success(false)
                         })
+                    }
+                }
+                // Inicia la llamada directamente (sin abrir el marcador), así funciona aunque el teléfono
+                // esté bloqueado: la pantalla de la llamada se muestra sobre el bloqueo.
+                // Devuelve false si no hay permiso CALL_PHONE o no se pudo llamar, para usar el marcador.
+                "llamarDirecto" -> {
+                    val telefono = call.argument<String>("telefono")
+                    val permitido = checkSelfPermission(Manifest.permission.CALL_PHONE) ==
+                        PackageManager.PERMISSION_GRANTED
+                    if (telefono.isNullOrBlank() || !permitido) {
+                        result.success(false)
+                    } else {
+                        try {
+                            startActivity(Intent(Intent.ACTION_CALL, Uri.fromParts("tel", telefono, null)))
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.success(false)
+                        }
                     }
                 }
                 else -> result.notImplemented()

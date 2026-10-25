@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/perfil_medico.dart';
 import '../services/storage_service.dart';
+import '../services/llamada_service.dart';
 import '../services/notificacion_service.dart';
 import '../theme/colores.dart';
 
@@ -101,6 +102,8 @@ class _PantallaEditarPerfilState extends State<PantallaEditarPerfil> {
     await StorageService.guardarPerfil(perfilNuevo);
     if (widget.esPrimerUso) await StorageService.marcarPrimerUsoCompletado();
     await NotificacionService.mostrarNotificacionPermanente(perfilNuevo);
+    // El permiso para llamar directo se pide acá, mientras el dueño está configurando la app
+    if (_contactos.isNotEmpty) await LlamadaService.pedirPermiso();
     if (mounted) Navigator.pop(context, perfilNuevo);
   }
 

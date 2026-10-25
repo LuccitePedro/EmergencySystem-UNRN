@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'services/llamada_service.dart';
 import 'services/notificacion_service.dart';
 import 'services/storage_service.dart';
 import 'services/auth_service.dart';
@@ -124,14 +124,19 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
     );
   }
 
+  /// Llama al [telefono]. Los contactos se llaman directo (funciona con el teléfono bloqueado);
+  /// el 911 abre el marcador, porque Android no deja que una app llame directo a emergencias.
   /// En modo debug muestra un diálogo en vez de llamar, para no hacer llamadas reales al probar.
-  Future<void> _llamar(String telefono, String nombre) async {
+  Future<void> _llamar(String telefono, String nombre, {bool emergencia = false}) async {
     if (kDebugMode) {
       _avisar('Modo desarrollo', 'En producción, esto llamaría a $nombre ($telefono).');
       return;
     }
-    final uri = Uri(scheme: 'tel', path: telefono);
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
+    if (emergencia) {
+      await LlamadaService.abrirMarcador(telefono);
+    } else {
+      await LlamadaService.llamar(telefono);
+    }
   }
 
   /// Llama al contacto indicado. Si es null (no hay contactos cargados), avisa que falta registrarlo.
@@ -224,7 +229,7 @@ class _PantallaPerfilMedicoState extends State<PantallaPerfilMedico> {
                               icono: Icons.phone,
                               colorFondo: Colores.verde,
                               titulo: '911',
-                              onTap: () => _llamar('911', 'el 911'),
+                              onTap: () => _llamar('911', 'el 911', emergencia: true),
                             ),
                             for (final c in contactos)
                               _BotonLlamada(
