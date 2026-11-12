@@ -7,6 +7,8 @@
 <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
 <!-- Llamar directo a los contactos de emergencia, aunque el teléfono esté bloqueado -->
 <uses-permission android:name="android.permission.CALL_PHONE"/>
+<!-- Volver a mostrar la notificación de emergencia al encender el teléfono -->
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
 <application
     android:label="EmergencySystem"
@@ -35,6 +37,15 @@
             <category android:name="android.intent.category.LAUNCHER"/>
         </intent-filter>
     </activity>
+
+    <!-- Vuelve a mostrar la notificación de emergencia al borrarla y al encender el teléfono -->
+    <receiver
+        android:name=".NotificacionReceiver"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED"/>
+        </intent-filter>
+    </receiver>
     
     <meta-data
         android:name="flutterEmbedding"

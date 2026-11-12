@@ -148,6 +148,20 @@ Siete secciones, navegables desde la grilla de la pantalla principal o deslizand
 > **Importante:** quien tenga el teléfono en la mano puede leer los datos vitales desde la pantalla de
 > bloqueo. Conviene cargar solo la información que realmente sirva en una emergencia.
 
+### En caso de robo o pérdida del teléfono
+
+Para que la app sirva en una emergencia, cualquiera que tenga el teléfono puede ver los datos vitales y
+llamar a los contactos de emergencia, aunque esté bloqueado. Esto incluye a alguien que lo haya robado.
+No se puede evitar sin impedir también que te ayuden: para el teléfono, quien te asiste y un ladrón son
+la misma persona sin desbloquear. Lo que **no** puede hacer es modificar tus datos, porque eso exige tu
+huella o tu PIN.
+
+Si te roban o perdés el teléfono:
+1. **Bloquealo o borralo de forma remota** desde *Encontrar mi dispositivo* de Google
+   (android.com/find) o, en Samsung, desde *SmartThings Find*.
+2. **Avisá a tus contactos de emergencia**, para que desconfíen de llamadas o mensajes que pidan dinero
+   o datos en tu nombre.
+
 ---
 
 ## Tecnologías utilizadas

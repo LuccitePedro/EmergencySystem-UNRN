@@ -1,30 +1,20 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/perfil_medico.dart';
 import '../utils/texto.dart';
 
 /// Maneja la notificación permanente que muestra los datos vitales, incluso en la pantalla de bloqueo.
+/// Acá se arma el texto; la notificación la crea el código nativo (NotificacionEmergencia.kt),
+/// que además la vuelve a mostrar si el usuario la borra y al encender el teléfono.
 class NotificacionService {
-  static final FlutterLocalNotificationsPlugin _notificacionesPlugin =
-      FlutterLocalNotificationsPlugin();
+  static const _dispositivo = MethodChannel('emergency_system/dispositivo');
 
-  // Se inicializa una sola vez, la primera vez que se muestra la notificación
-  static Future<void>? _inicializacion;
+  // El permiso se pide una sola vez, la primera vez que se muestra la notificación
+  static Future<void>? _permiso;
 
-  /// Pide el permiso de notificaciones (Android 13+) e inicializa el plugin.
-  static Future<void> _inicializar() async {
-    // Pedir permiso en Android 13+
+  /// Pide el permiso de notificaciones (Android 13+).
+  static Future<void> _pedirPermiso() async {
     await Permission.notification.request();
-
-    const AndroidInitializationSettings configuracionAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings configuraciones = InitializationSettings(
-      android: configuracionAndroid,
-    );
-
-    // Al tocar la notificación Android abre la app, que arranca directo en el perfil médico
-    await _notificacionesPlugin.initialize(settings: configuraciones);
   }
 
   /// Arma el texto de la notificación con los datos vitales del perfil,
@@ -44,10 +34,10 @@ class NotificacionService {
   }
 
   /// Muestra la notificación con el resumen del [perfil], o la actualiza si ya estaba.
-  /// No se puede descartar deslizando y, al actualizarse, no vuelve a aparecer en pantalla.
+  /// Si el usuario la borra, vuelve a aparecer sola; al actualizarse, no vuelve a aparecer en pantalla.
   /// Se llama al abrir la app y cada vez que se guarda el perfil.
   static Future<void> mostrarNotificacionPermanente(PerfilMedico perfil) async {
-    await (_inicializacion ??= _inicializar());
+    await (_permiso ??= _pedirPermiso());
 
     final resumen = perfil.estaVacio
         ? 'Toca aquí para ver información vital'
@@ -56,33 +46,15 @@ class NotificacionService {
         ? '🏥 Perfil Médico de Emergencia'
         : '🏥 Emergencia: ${perfil.nombre}';
 
-    final AndroidNotificationDetails detallesAndroid = AndroidNotificationDetails(
-      'canal_emergencia_01',
-      'Acceso de Emergencia',
-      channelDescription: 'Mantiene el acceso rápido a los datos médicos',
-      importance: Importance.max,
-      priority: Priority.high,
-      ongoing: true, // Esto hace que no se pueda borrar deslizando
-      autoCancel: false,
-      onlyAlertOnce: true, // Al actualizar los datos no vuelve a aparecer en pantalla
-      fullScreenIntent: true, // ESTO ES CLAVE: Le dice a Android que es una urgencia (como una llamada)
-      visibility: NotificationVisibility.public, // Para que se vea en la pantalla de bloqueo
-      // Al expandir la notificación se ven todas las líneas del resumen
-      styleInformation: BigTextStyleInformation(
-        '$resumen\n\nToca para ver el perfil completo',
-        contentTitle: titulo,
-      ),
-    );
-
-    final NotificationDetails detallesPlataforma =
-        NotificationDetails(android: detallesAndroid);
-
-    // Acá usamos 'id', 'title', 'body', 'notificationDetails'
-    await _notificacionesPlugin.show(
-      id: 0,
-      title: titulo,
-      body: resumen,
-      notificationDetails: detallesPlataforma,
-    );
+    try {
+      await _dispositivo.invokeMethod('mostrarNotificacion', {
+        'titulo': titulo,
+        'texto': resumen,
+        // Al expandir la notificación se ven todas las líneas del resumen
+        'textoLargo': '$resumen\n\nToca para ver el perfil completo',
+      });
+    } on PlatformException {
+      // Si no se puede mostrar, la app sigue funcionando: los datos se ven al abrirla
+    }
   }
 }

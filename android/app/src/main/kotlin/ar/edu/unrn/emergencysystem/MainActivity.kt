@@ -74,6 +74,16 @@ class MainActivity: FlutterFragmentActivity() {
                         }
                     }
                 }
+                // Muestra o actualiza la notificación permanente con los datos que arma Dart
+                "mostrarNotificacion" -> {
+                    NotificacionEmergencia.mostrar(
+                        this,
+                        call.argument<String>("titulo") ?: "",
+                        call.argument<String>("texto") ?: "",
+                        call.argument<String>("textoLargo") ?: ""
+                    )
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }
