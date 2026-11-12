@@ -71,8 +71,10 @@ conservan**; no hace falta desinstalar.
 - **Tarjeta de emergencia en la pantalla principal**: grupo y factor sanguíneo, alergias (con su
   severidad), enfermedades y medicación, mostrando los datos reales y no solo un "Sí/No".
 - **Notificación permanente**: muestra los datos vitales y los contactos de emergencia en la barra de
-  notificaciones y en la pantalla de bloqueo. Al tocarla se abre el perfil completo. No se puede descartar
-  deslizando, y cuando se actualizan los datos se renueva en silencio, sin volver a aparecer en pantalla.
+  notificaciones y en la pantalla de bloqueo. Al tocarla se abre el perfil completo. Está siempre
+  disponible: si se borra sin querer (deslizándola o con "Borrar todo"), vuelve a aparecer sola, y al
+  encender el teléfono se muestra después del primer desbloqueo, sin abrir la app. Cuando se actualizan
+  los datos se renueva en silencio, sin volver a aparecer en pantalla.
 - **Resúmenes que no crecen sin límite**: si hay muchos elementos cargados, la tarjeta principal y la
   notificación muestran los tres primeros y resumen el resto (por ejemplo, *"Penicilina, Polen, Látex y 5 más"*).
 
@@ -328,8 +330,9 @@ huella, guardado cifrado, notificación, las siete secciones y la carga de 30 al
 
 ## Limitaciones conocidas
 
-- **Llamadas:** se probaron en una tablet sin línea telefónica, por lo que no se pudo realizar una llamada
-  real. La funcionalidad usa el marcador estándar de Android, pero falta verificarla en un teléfono.
+- **Llamadas:** las llamadas a los contactos, también con el teléfono bloqueado, se probaron en un
+  Samsung Galaxy A34 5G con Android 16. El botón del 911 no se probó con una llamada real, a propósito;
+  abre el marcador del teléfono con el número cargado.
 - **Dispositivo sin bloqueo de pantalla:** si el dispositivo no tiene PIN, patrón, contraseña ni huella,
   la edición queda permitida, ya que cualquiera podría entrar al teléfono de todas formas.
 - **Cambio de teléfono:** como los datos están cifrados con claves del dispositivo y el backup está
@@ -344,7 +347,6 @@ La aplicación es una **versión prototipo completa y funcional**, con todas las
 implementadas y probadas en un dispositivo real.
 
 Pendiente para futuras versiones:
-- Verificar las llamadas en un teléfono con línea
 - Versión para iOS
 
 La app se distribuye únicamente mediante el APK de [Releases](https://github.com/LuccitePedro/EmergencySystem-UNRN/releases);
